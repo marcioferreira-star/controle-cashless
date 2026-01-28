@@ -128,8 +128,9 @@ router.post("/registrar-envio", async (req, res) => {
     /* ============================
        CARREGAMENTOS ÚNICOS
     ============================ */
-    const historicoCompleto = await getHistorico();
-    const idxMaquinas = await getMaquinasIndex(); // serial → linha
+    const idxMaquinas = await getMaquinasIndex();
+    const historicoCompleto = isRetorno ? await getHistorico() : [];
+
     const hoje = hojeBR();
     const autor = req.session.user?.nome || "Sistema";
 
