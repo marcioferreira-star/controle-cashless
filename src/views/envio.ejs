@@ -8,18 +8,24 @@
     margin-bottom: 8px;
   }
 
+  /* ✅ CORREÇÃO: flex sem estourar a tela no desktop */
   .area-flex {
     display: flex;
     gap: 20px;
     width: 100%;
+    align-items: stretch;
   }
 
+  /* ✅ CORREÇÃO: não use width:100% em duas colunas */
   .box {
     background: #fff;
     border: 1px solid #dcdcdc;
     border-radius: 8px;
     padding: 15px;
-    width: 100%;
+
+    flex: 1;
+    min-width: 0;
+    width: auto;
   }
 
   .lista-maquinas {
@@ -101,6 +107,7 @@
     cursor: pointer;
     font-size: 14px;
     font-weight: bold;
+    margin-left: 8px;
   }
 
   .btn-remove:hover {
@@ -113,6 +120,15 @@
     margin-bottom: 10px;
     font-size: 15px;
     height: 38px;
+  }
+
+  /* ✅ melhora o bloco das datas (não estoura) */
+  #grpDatas{
+    width: 100%;
+  }
+  #grpDatas .campo{
+    flex: 1;
+    min-width: 200px;
   }
 
   /* ✅ MOBILE: quebra em coluna */
@@ -148,7 +164,7 @@
     <div class="box">
       <div class="section-title">Selecionadas</div>
       <div class="selecionadas-box">
-        <ul id="listaSelecionadas"></ul>
+        <ul id="listaSelecionadas" style="padding-left: 12px; margin:0;"></ul>
       </div>
     </div>
 
@@ -166,9 +182,7 @@
           <option value="Envio SP">Envio SP</option>
           <option value="Envio RJ">Envio RJ</option>
           <option value="Envio URA">Envio URA</option>
-
           <option value="Envio Fixo">Envio Fixo</option>
-
           <option value="Retorno SP">Retorno SP</option>
           <option value="Retorno RJ">Retorno RJ</option>
           <option value="Retorno URA">Retorno URA</option>
@@ -181,12 +195,12 @@
       </div>
 
       <div class="area-flex" id="grpDatas" style="display:none;">
-        <div class="campo" style="width: 50%;">
+        <div class="campo">
           <label>Data de Saída</label>
           <input type="date" class="form-control" name="dt_saida" id="dt_saida">
         </div>
 
-        <div class="campo" style="width: 50%;">
+        <div class="campo">
           <label>Data de Retorno</label>
           <input type="date" class="form-control" name="dt_retorno" id="dt_retorno">
         </div>
@@ -342,7 +356,7 @@ function renderSel() {
 
   if (selecionadas.length === 0) {
     listaSel.innerHTML =
-      "<li style='color:#777;text-align:center;'>Nenhuma máquina selecionada</li>";
+      "<li style='color:#777;text-align:center; list-style:none;'>Nenhuma máquina selecionada</li>";
     return;
   }
 
@@ -350,9 +364,13 @@ function renderSel() {
     const li = document.createElement("li");
     li.style.padding = "6px";
     li.style.listStyle = "none";
+    li.style.display = "flex";
+    li.style.alignItems = "center";
+    li.style.justifyContent = "space-between";
+    li.style.gap = "10px";
 
     li.innerHTML = `
-      ${s}
+      <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${s}</span>
       <button type="button" class="btn-remove" onclick="removerSel('${s}')">×</button>
     `;
 
@@ -374,12 +392,10 @@ function validarStatus(acao, seriais) {
   seriais.forEach(serial => {
     const status = String(maquinasPorSerial[serial] || "").toLowerCase();
 
-    // ❌ Não pode enviar se já estiver em uso OU fixo
     if (acao.includes("Envio") && (status.includes("em uso") || status.includes("fixo"))) {
       erros.push(`❌ ${serial} já está "Em Uso" ou "Fixo".`);
     }
 
-    // ❌ Não pode retornar se já estiver em estoque
     if (acao.includes("Retorno") && status.includes("estoque")) {
       erros.push(`❌ ${serial} já está em "Estoque".`);
     }
@@ -400,7 +416,6 @@ async function refreshMaquinas() {
     maquinas = Array.isArray(data.maquinas) ? data.maquinas : [];
     rebuildIndex();
 
-    // remove selecionadas que não existem mais (segurança)
     const set = new Set(maquinas.map(m => m.serial));
     selecionadas = selecionadas.filter(s => set.has(s));
 
@@ -479,7 +494,6 @@ form.addEventListener("submit", async (e) => {
   setLoading(botao, true);
 
   try {
-    // envia sempre no formato [{serial, linha}]
     let payload = {
       ...basePayload,
       seriais: selecionadas.map(s => {
@@ -496,7 +510,6 @@ form.addEventListener("submit", async (e) => {
 
     let data = await resp.json();
 
-    // se precisar popup, reenviar SOMENTE os pendentes (também no formato [{serial, linha}])
     if (data.needsPopup) {
       const origem = prompt("⚠️ Máquina retornando sem envio registrado.\n\nInforme a origem:");
       if (!origem) {
@@ -530,7 +543,6 @@ form.addEventListener("submit", async (e) => {
     if (data.ok) {
       await refreshMaquinas();
 
-      // limpa seleção e form
       selecionadas = [];
       form.reset();
       aplicarRegrasCampos();

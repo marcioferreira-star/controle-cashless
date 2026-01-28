@@ -14,6 +14,9 @@
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
       gap: 16px;
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
     }
 
     .card-kpi {
@@ -27,6 +30,7 @@
       color: #fff;
       box-shadow: 0 4px 12px rgba(0,0,0,0.15);
       min-height: 110px;
+      min-width: 0;
     }
 
     .kpi-total      { background: #0066ff; }
