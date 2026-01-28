@@ -1,147 +1,134 @@
 <%- include('partials/header') %>
-<%- include('partials/sidebar', { page: 'dashboard' }) %>
+<%- include('partials/sidebar', { page: 'dashboard', user }) %>
 
-<div class="app-main">
-  <div class="top-header">
-    <button class="btn-menu" onclick="toggleMenu()" aria-label="Abrir menu">☰</button>
+<div class="main-content">
 
-    <div class="top-header-right">
-      <div class="user-info">
-        👤 <%= (user && user.nome) ? user.nome : "Usuário" %>
+  <style>
+    h1 {
+      font-size: 28px;
+      font-weight: 800;
+      margin: 0 0 18px 0;
+    }
+
+    .kpis{
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+    }
+
+    .card-kpi {
+      border-radius: 18px;
+      padding: 22px;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      position: relative;
+      overflow: hidden;
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      min-height: 110px;
+    }
+
+    .kpi-total      { background: #0066ff; }
+    .kpi-disp       { background: #00b894; }
+    .kpi-uso        { background: #f1c40f; color:#000; }
+    .kpi-atrasadas  { background: #e74c3c; }
+    .kpi-fixas      { background: #6c5ce7; }
+
+    .kpi-icon {
+      font-size: 58px;
+      opacity: 1;
+      position: absolute;
+      right: 18px;
+      bottom: 14px;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.35));
+    }
+
+    .kpi-label {
+      font-size: 16px;
+      font-weight: 500;
+    }
+
+    .kpi-value {
+      font-size: 44px;
+      font-weight: 900;
+      margin-top: 6px;
+    }
+
+    @media (max-width: 420px){
+      .kpi-value{ font-size: 38px; }
+    }
+  </style>
+
+  <h1>Dashboard</h1>
+
+  <div class="kpis">
+    <div class="card-kpi kpi-total">
+      <div>
+        <div class="kpi-label">Total</div>
+        <div class="kpi-value" id="kpiTotal">0</div>
       </div>
-      <a href="/logout" class="logout-btn">Sair</a>
+      <div class="kpi-icon">📦</div>
+    </div>
+
+    <div class="card-kpi kpi-disp">
+      <div>
+        <div class="kpi-label">Disponíveis</div>
+        <div class="kpi-value" id="kpiDisp">0</div>
+      </div>
+      <div class="kpi-icon">✅</div>
+    </div>
+
+    <div class="card-kpi kpi-uso">
+      <div>
+        <div class="kpi-label">Em Uso</div>
+        <div class="kpi-value" id="kpiUso">0</div>
+      </div>
+      <div class="kpi-icon">🚚</div>
+    </div>
+
+    <div class="card-kpi kpi-atrasadas">
+      <div>
+        <div class="kpi-label">Atrasadas</div>
+        <div class="kpi-value" id="kpiAtras">0</div>
+      </div>
+      <div class="kpi-icon">⏰</div>
+    </div>
+
+    <div class="card-kpi kpi-fixas">
+      <div>
+        <div class="kpi-label">Fixas</div>
+        <div class="kpi-value" id="kpiFixas">0</div>
+      </div>
+      <div class="kpi-icon">📌</div>
     </div>
   </div>
 
-  <div class="main-content">
+  <script>
+    const resumo = <%- JSON.stringify(resumo || {}) %>;
 
-    <style>
-      h1 {
-        font-size: 28px;
-        font-weight: 800;
-        margin: 0 0 18px 0;
-      }
+    function animateCount(el, target, duration = 900) {
+      let start = 0;
+      const step = 20;
+      const increment = target / (duration / step);
 
-      .kpis{
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-        gap: 16px;
-      }
+      const counter = setInterval(() => {
+        start += increment;
+        if (start >= target) {
+          start = target;
+          clearInterval(counter);
+        }
+        el.textContent = Math.floor(start);
+      }, step);
+    }
 
-      .card-kpi {
-        border-radius: 18px;
-        padding: 22px;
-        display: flex;
-        align-items: center;
-        gap: 18px;
-        position: relative;
-        overflow: hidden;
-        color: #fff;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        min-height: 110px;
-      }
+    animateCount(document.getElementById("kpiTotal"), resumo.total || 0);
+    animateCount(document.getElementById("kpiDisp"), resumo.disponiveis || 0);
+    animateCount(document.getElementById("kpiUso"), resumo.emUso || 0);
+    animateCount(document.getElementById("kpiFixas"), resumo.fixas || 0);
+    animateCount(document.getElementById("kpiAtras"), resumo.atrasadas || 0);
+  </script>
 
-      .kpi-total      { background: #0066ff; }
-      .kpi-disp       { background: #00b894; }
-      .kpi-uso        { background: #f1c40f; color:#000; }
-      .kpi-atrasadas  { background: #e74c3c; }
-      .kpi-fixas      { background: #6c5ce7; }
-
-      .kpi-icon {
-        font-size: 58px;
-        opacity: 1;
-        position: absolute;
-        right: 18px;
-        bottom: 14px;
-        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.35));
-      }
-
-      .kpi-label {
-        font-size: 16px;
-        font-weight: 500;
-      }
-
-      .kpi-value {
-        font-size: 44px;
-        font-weight: 900;
-        margin-top: 6px;
-      }
-
-      @media (max-width: 420px){
-        .kpi-value{ font-size: 38px; }
-      }
-    </style>
-
-    <h1>Dashboard</h1>
-
-    <div class="kpis">
-      <div class="card-kpi kpi-total">
-        <div>
-          <div class="kpi-label">Total</div>
-          <div class="kpi-value" id="kpiTotal">0</div>
-        </div>
-        <div class="kpi-icon">📦</div>
-      </div>
-
-      <div class="card-kpi kpi-disp">
-        <div>
-          <div class="kpi-label">Disponíveis</div>
-          <div class="kpi-value" id="kpiDisp">0</div>
-        </div>
-        <div class="kpi-icon">✅</div>
-      </div>
-
-      <div class="card-kpi kpi-uso">
-        <div>
-          <div class="kpi-label">Em Uso</div>
-          <div class="kpi-value" id="kpiUso">0</div>
-        </div>
-        <div class="kpi-icon">🚚</div>
-      </div>
-
-      <div class="card-kpi kpi-atrasadas">
-        <div>
-          <div class="kpi-label">Atrasadas</div>
-          <div class="kpi-value" id="kpiAtras">0</div>
-        </div>
-        <div class="kpi-icon">⏰</div>
-      </div>
-
-      <div class="card-kpi kpi-fixas">
-        <div>
-          <div class="kpi-label">Fixas</div>
-          <div class="kpi-value" id="kpiFixas">0</div>
-        </div>
-        <div class="kpi-icon">📌</div>
-      </div>
-    </div>
-
-    <script>
-      const resumo = <%- JSON.stringify(resumo || {}) %>;
-
-      function animateCount(el, target, duration = 900) {
-        let start = 0;
-        const step = 20;
-        const increment = target / (duration / step);
-
-        const counter = setInterval(() => {
-          start += increment;
-          if (start >= target) {
-            start = target;
-            clearInterval(counter);
-          }
-          el.textContent = Math.floor(start);
-        }, step);
-      }
-
-      animateCount(document.getElementById("kpiTotal"), resumo.total || 0);
-      animateCount(document.getElementById("kpiDisp"), resumo.disponiveis || 0);
-      animateCount(document.getElementById("kpiUso"), resumo.emUso || 0);
-      animateCount(document.getElementById("kpiFixas"), resumo.fixas || 0);
-      animateCount(document.getElementById("kpiAtras"), resumo.atrasadas || 0);
-    </script>
-
-  </div>
 </div>
 
 <%- include('partials/footer') %>
