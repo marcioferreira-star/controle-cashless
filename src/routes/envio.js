@@ -9,7 +9,8 @@ const router = express.Router();
 ============================================================ */
 router.get("/", async (req, res) => {
   try {
-    const maquinas = await getMaquinas();
+    // ✅ força ler do Google Sheets (ignora cache)
+    const maquinas = await getMaquinas({ force: true });
 
     const listaSegura = Array.isArray(maquinas) ? maquinas : [];
 

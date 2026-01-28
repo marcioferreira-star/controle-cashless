@@ -385,4 +385,19 @@ router.post("/atualizar-status", async (req, res) => {
   }
 });
 
+/* ======================================================
+   ✅ GET /api/maquinas
+   - usado pra atualizar o front (sem dar reload na página)
+====================================================== */
+router.get("/maquinas", async (req, res) => {
+  try {
+    const idx = await getMaquinasIndex();
+    const maquinas = Array.from(idx.values());
+    return res.json({ ok: true, maquinas });
+  } catch (err) {
+    console.error("❌ ERRO /api/maquinas:", err);
+    return res.json({ ok: false, msg: "Erro ao carregar máquinas." });
+  }
+});
+
 export default router;

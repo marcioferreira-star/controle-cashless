@@ -3,7 +3,7 @@ import {
   getSheetData,
   appendToSheet,
   updateSheetCell,          // rápido (mantido para compat)
-  batchUpdateValues         // ✅ novo: batch de updates
+  batchUpdateValues         // ✅ batch de updates
 } from "./sheet.js";
 
 const SHEET_NAME = "CONTROLE MAQUININHAS PAGSEGURO - INGRESSE";
@@ -11,16 +11,63 @@ const HISTORICO_SHEET = "HISTORICO MAQUINAS";
 const EVENTOS_SHEET = "DADOS EVENTOS";
 
 /* ============================================================
-   🔵 CARREGAR LISTA DE MÁQUINAS (A → O)
+   🔵 CACHE (PERFORMANCE)
+   - Evita reler a planilha em sequência (principal causa de lentidão)
 ============================================================ */
-export async function getMaquinas() {
+const CACHE = {
+  // Máquinas (A2:O2000)
+  maquinas: {
+    ts: 0,
+    ttlMs: 15_000, // 15s
+    data: []
+  },
+
+  // Index serial -> máquina (derivado de maquinas)
+  maquinasIndex: {
+    ts: 0,
+    ttlMs: 15_000, // 15s (mesmo do cache de maquinas)
+    data: new Map()
+  },
+
+  // EventoInfo por id_evento
+  eventoInfo: {
+    ttlMs: 5 * 60_000, // 5min
+    map: new Map() // id -> { ts, data }
+  }
+};
+
+function now() {
+  return Date.now();
+}
+
+function isFresh(ts, ttlMs) {
+  return ts && (now() - ts) < ttlMs;
+}
+
+/* ============================================================
+   🔵 CARREGAR LISTA DE MÁQUINAS (A → O)  (COM CACHE)
+============================================================ */
+export async function getMaquinas(options = {}) {
+  const force = !!options.force;
+
   try {
+    if (!force && isFresh(CACHE.maquinas.ts, CACHE.maquinas.ttlMs)) {
+      return CACHE.maquinas.data;
+    }
+
     const range = `'${SHEET_NAME}'!A2:O2000`;
     const dados = await getSheetData(range);
 
-    if (!dados || dados.length === 0) return [];
+    if (!dados || dados.length === 0) {
+      CACHE.maquinas.ts = now();
+      CACHE.maquinas.data = [];
+      // também invalida index
+      CACHE.maquinasIndex.ts = 0;
+      CACHE.maquinasIndex.data = new Map();
+      return [];
+    }
 
-    return dados.map((linha, i) => ({
+    const maquinas = dados.map((linha, i) => ({
       linha: i + 2,
       modelo: linha[1] || "-",
       serial: linha[2] || "-",
@@ -34,6 +81,14 @@ export async function getMaquinas() {
       dataRetorno: linha[14] || "-"
     }));
 
+    CACHE.maquinas.ts = now();
+    CACHE.maquinas.data = maquinas;
+
+    // invalida o index para ser reconstruído com esse snapshot
+    CACHE.maquinasIndex.ts = 0;
+    CACHE.maquinasIndex.data = new Map();
+
+    return maquinas;
   } catch (err) {
     console.error("❌ Erro ao carregar máquinas:", err);
     return [];
@@ -41,17 +96,34 @@ export async function getMaquinas() {
 }
 
 /* ============================================================
-   🔵 NOVO: MAPA serial → { linha, ... } (para evitar re-leituras)
+   🔵 MAPA serial → { linha, ... } (COM CACHE)
 ============================================================ */
-export async function getMaquinasIndex() {
-  const arr = await getMaquinas();
-  const map = new Map();
-  for (const m of arr) {
-    if (m.serial && m.serial !== "-") {
-      map.set(String(m.serial).trim(), m);
+export async function getMaquinasIndex(options = {}) {
+  const force = !!options.force;
+
+  try {
+    if (!force && isFresh(CACHE.maquinasIndex.ts, CACHE.maquinasIndex.ttlMs)) {
+      return CACHE.maquinasIndex.data;
     }
+
+    const arr = await getMaquinas({ force });
+
+    const map = new Map();
+    for (const m of arr) {
+      const serial = String(m.serial || "").trim();
+      if (serial && serial !== "-") {
+        map.set(serial, m);
+      }
+    }
+
+    CACHE.maquinasIndex.ts = now();
+    CACHE.maquinasIndex.data = map;
+
+    return map;
+  } catch (err) {
+    console.error("❌ Erro ao montar index de máquinas:", err);
+    return new Map();
   }
-  return map;
 }
 
 /* ============================================================
@@ -68,13 +140,12 @@ export async function getResumo() {
       (m.status || "").toLowerCase().includes("estoque")
     ).length;
 
-    // Fixo conta como em uso (já está assim no seu código)
+    // Fixo conta como em uso
     const emUso = maquinas.filter(m => {
       const st = (m.status || "").toLowerCase().trim();
       return st.includes("em uso") || st === "fixo";
     }).length;
 
-    // ✅ NOVO: fixas
     const fixas = maquinas.filter(m =>
       (m.status || "").toLowerCase().trim() === "fixo"
     ).length;
@@ -84,21 +155,18 @@ export async function getResumo() {
       if (!m.dataRetorno || m.dataRetorno.length < 8) return false;
       if ((m.status || "").toLowerCase().trim() === "fixo") return false;
 
-      const [d, mth, y] = m.dataRetorno.split("/");
+      const [d, mth, y] = String(m.dataRetorno).split("/");
       const dataRet = new Date(`${y}-${mth}-${d}`);
 
       return (m.status || "").toLowerCase().includes("em uso") && dataRet < hoje;
     }).length;
 
-    // ✅ AGORA retorna fixas também
     return { total, disponiveis, emUso, fixas, atrasadas };
-
   } catch (err) {
     console.error("❌ Erro resumo:", err);
     return { total: 0, disponiveis: 0, emUso: 0, fixas: 0, atrasadas: 0 };
   }
 }
-
 
 /* ============================================================
    🔵 CONTAGEM POR STATUS
@@ -114,7 +182,6 @@ export async function getStatusCount() {
     });
 
     return mapa;
-
   } catch (err) {
     console.error("❌ Erro getStatusCount:", err);
     return null;
@@ -135,7 +202,6 @@ export async function getEmpresaCount() {
     });
 
     return Object.keys(mapa).map(k => ({ nome: k, qtd: mapa[k] }));
-
   } catch (err) {
     console.error("❌ Erro getEmpresaCount:", err);
     return [];
@@ -162,7 +228,6 @@ export async function getLocalCount() {
     });
 
     return Object.keys(mapa).map(k => ({ nome: k, qtd: mapa[k] }));
-
   } catch (err) {
     console.error("❌ Erro getLocalCount:", err);
     return [];
@@ -197,7 +262,6 @@ export async function getEnviosRetornos30Dias() {
       envios: Object.values(dias).map(d => d.envios),
       retornos: Object.values(dias).map(d => d.retornos)
     };
-
   } catch (err) {
     console.error("❌ Erro getEnviosRetornos30Dias:", err);
     return null;
@@ -217,12 +281,13 @@ export async function getTopEventos() {
       mapa[m.idEvento] = (mapa[m.idEvento] || 0) + 1;
     });
 
-    return Object.keys(mapa).map(id => ({
-      id,
-      nome: maquinas.find(x => x.idEvento == id)?.nomeEvento || "-",
-      qtd: mapa[id]
-    })).sort((a, b) => b.qtd - a.qtd);
-
+    return Object.keys(mapa)
+      .map(id => ({
+        id,
+        nome: maquinas.find(x => x.idEvento == id)?.nomeEvento || "-",
+        qtd: mapa[id]
+      }))
+      .sort((a, b) => b.qtd - a.qtd);
   } catch (err) {
     console.error("❌ Erro getTopEventos:", err);
     return [];
@@ -230,24 +295,37 @@ export async function getTopEventos() {
 }
 
 /* ============================================================
-   🔵 BUSCAR DADOS DO EVENTO
+   🔵 BUSCAR DADOS DO EVENTO (COM CACHE)
 ============================================================ */
 export async function getEventoInfo(idEvento) {
   try {
-    const linhas = await getSheetData(`'${EVENTOS_SHEET}'!A2:D`);
-    const alvo = String(idEvento).trim();
+    const alvo = String(idEvento || "").trim();
+    if (!alvo) return null;
 
+    // cache hit
+    const cached = CACHE.eventoInfo.map.get(alvo);
+    if (cached && isFresh(cached.ts, CACHE.eventoInfo.ttlMs)) {
+      return cached.data;
+    }
+
+    // lê planilha
+    const linhas = await getSheetData(`'${EVENTOS_SHEET}'!A2:D`);
     const row = linhas.find(r => String(r[0]).trim() === alvo);
 
-    if (!row) return null;
+    if (!row) {
+      CACHE.eventoInfo.map.set(alvo, { ts: now(), data: null });
+      return null;
+    }
 
-    return {
+    const data = {
       id_evento: row[0],
       nome_evento: row[1] || "-",
       produtora: row[2] || "-",
       comercial: row[3] || "-"
     };
 
+    CACHE.eventoInfo.map.set(alvo, { ts: now(), data });
+    return data;
   } catch (err) {
     console.error("❌ Erro ao buscar dados do evento:", err);
     return null;
@@ -256,7 +334,6 @@ export async function getEventoInfo(idEvento) {
 
 /* ============================================================
    🔵 (LEGADO) ATUALIZAÇÕES unitárias rápidas
-   (mantidas para compatibilidade se precisar)
 ============================================================ */
 export async function atualizarDadosEvento(serial, eventoInfo) {
   const idx = await getMaquinasIndex();
@@ -296,7 +373,7 @@ export async function atualizarDataSaida(serial, dataSaida) {
 
 /* ============================================================
    🔵 REGISTRAR MOVIMENTO (HISTÓRICO)
-   - Aceita 1 linha (array simples) ou várias (array de arrays)
+   - Aceita 1 linha (obj) ou várias linhas (array de arrays)
 ============================================================ */
 export async function registrarMovimento(info) {
   try {
@@ -321,7 +398,6 @@ export async function registrarMovimento(info) {
 
     // novo: várias linhas de uma vez (já no formato A..K)
     return await appendToSheet(`'${HISTORICO_SHEET}'!A:K`, info);
-
   } catch (err) {
     console.error("❌ registrarMovimento erro:", err);
     return false;
@@ -330,6 +406,7 @@ export async function registrarMovimento(info) {
 
 /* ============================================================
    🔵 HISTÓRICO COMPLETO
+   - Sem cache (pra refletir o “último” imediatamente no front)
 ============================================================ */
 export async function getHistorico() {
   try {
@@ -349,7 +426,6 @@ export async function getHistorico() {
       comercial: l[9] || "-",
       obs: l[10] || "-"
     }));
-
   } catch (err) {
     console.error("❌ Erro getHistorico:", err);
     return [];

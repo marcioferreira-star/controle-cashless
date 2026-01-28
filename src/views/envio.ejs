@@ -153,7 +153,6 @@
           <option value="Envio RJ">Envio RJ</option>
           <option value="Envio URA">Envio URA</option>
 
-          <!-- NOVO -->
           <option value="Envio Fixo">Envio Fixo</option>
 
           <option value="Retorno SP">Retorno SP</option>
@@ -196,14 +195,20 @@
 
 <script>
 /* =======================================================
-      DADOS
+      DADOS (inicial)
 ======================================================= */
-const maquinas = <%- JSON.stringify(maquinas || []) %>;
+let maquinas = <%- JSON.stringify(maquinas || []) %>;
 let selecionadas = [];
 
-/* Mapa serial → status */
-const maquinasPorSerial = {};
-maquinas.forEach(m => maquinasPorSerial[m.serial] = m.status || "-");
+/* Mapa serial → status (mantido sempre atualizado) */
+let maquinasPorSerial = {};
+function rebuildIndex() {
+  maquinasPorSerial = {};
+  (maquinas || []).forEach(m => {
+    maquinasPorSerial[m.serial] = m.status || "-";
+  });
+}
+rebuildIndex();
 
 /* ELEMENTOS */
 const lista = document.getElementById("listaMaquinas");
@@ -216,7 +221,7 @@ const idEvento = document.getElementById("id_evento");
 const dtSaida = document.getElementById("dt_saida");
 const dtRetorno = document.getElementById("dt_retorno");
 
-/* NOVO: wrapper do campo retorno (pra esconder no Envio Fixo) */
+/* wrapper do campo retorno (pra esconder no Envio Fixo) */
 const campoRetorno = dtRetorno.parentElement;
 
 /* =======================================================
@@ -258,7 +263,6 @@ function aplicarRegrasCampos() {
     dtSaida.required = false;
     dtRetorno.required = false;
 
-    /* garante que o campo retorno volte a aparecer no retorno */
     campoRetorno.style.display = "";
 
     idEvento.value = "";
@@ -266,7 +270,6 @@ function aplicarRegrasCampos() {
     dtRetorno.value = "";
   }
 }
-
 acaoSelect.addEventListener("change", aplicarRegrasCampos);
 
 /* =======================================================
@@ -284,8 +287,9 @@ function renderLista() {
 
   let total = 0;
 
-  maquinas.forEach(m => {
-    const serialLimpo = m.serial.toLowerCase().replace(/[\s-]+/g, "");
+  (maquinas || []).forEach(m => {
+    const serialLimpo = String(m.serial || "").toLowerCase().replace(/[\s-]+/g, "");
+    if (!serialLimpo) return;
 
     if (termos.length > 0 && !termos.some(t => serialLimpo.includes(t)))
       return;
@@ -314,7 +318,6 @@ function renderLista() {
       "<div style='padding:10px;color:#777'>Nenhuma máquina encontrada…</div>";
   }
 }
-
 filtro.addEventListener("input", renderLista);
 
 /* =======================================================
@@ -342,7 +345,6 @@ function renderSel() {
     listaSel.appendChild(li);
   });
 }
-
 function removerSel(s) {
   selecionadas = selecionadas.filter(x => x !== s);
   renderLista();
@@ -356,7 +358,7 @@ function validarStatus(acao, seriais) {
   const erros = [];
 
   seriais.forEach(serial => {
-    const status = (maquinasPorSerial[serial] || "").toLowerCase();
+    const status = String(maquinasPorSerial[serial] || "").toLowerCase();
 
     // ❌ Não pode enviar se já estiver em uso OU fixo
     if (acao.includes("Envio") && (status.includes("em uso") || status.includes("fixo"))) {
@@ -373,6 +375,61 @@ function validarStatus(acao, seriais) {
 }
 
 /* =======================================================
+      ATUALIZAR DADOS DO FRONT (sem reload)
+======================================================= */
+async function refreshMaquinas() {
+  try {
+    const resp = await fetch("/api/maquinas");
+    const data = await resp.json();
+    if (!data.ok) throw new Error(data.msg || "Falha ao carregar máquinas");
+
+    maquinas = Array.isArray(data.maquinas) ? data.maquinas : [];
+    rebuildIndex();
+
+    // remove selecionadas que não existem mais (segurança)
+    const set = new Set(maquinas.map(m => m.serial));
+    selecionadas = selecionadas.filter(s => set.has(s));
+
+    renderLista();
+    renderSel();
+  } catch (err) {
+    console.error("❌ refreshMaquinas:", err);
+    // se falhar, mantém do jeito que está
+  }
+}
+
+/* =======================================================
+      UI LOADING
+======================================================= */
+function setLoading(botao, on) {
+  if (!botao) return;
+
+  if (on) {
+    botao.dataset.loading = "1";
+    botao.disabled = true;
+    botao.dataset.original = botao.innerHTML;
+    botao.innerHTML = `
+      <span style="
+        border: 3px solid #fff;
+        border-top: 3px solid transparent;
+        border-radius: 50%;
+        width: 18px;
+        height: 18px;
+        display: inline-block;
+        animation: spin 0.7s linear infinite;
+        vertical-align: middle;
+        margin-right: 8px;
+      "></span>
+      Salvando...
+    `;
+  } else {
+    botao.disabled = false;
+    botao.dataset.loading = "0";
+    botao.innerHTML = botao.dataset.original || "Salvar Envio / Retorno";
+  }
+}
+
+/* =======================================================
       SUBMIT
 ======================================================= */
 const form = document.getElementById("formEnvio");
@@ -381,93 +438,94 @@ form.addEventListener("submit", async (e) => {
   e.preventDefault();
 
   const botao = document.querySelector(".btn-registrar");
-  const textoOriginal = botao.innerHTML;
-
   if (botao.dataset.loading === "1") return;
-  botao.dataset.loading = "1";
-
-  botao.disabled = true;
-  botao.innerHTML = `
-    <span style="
-      border: 3px solid #fff;
-      border-top: 3px solid transparent;
-      border-radius: 50%;
-      width: 18px;
-      height: 18px;
-      display: inline-block;
-      animation: spin 0.7s linear infinite;
-      vertical-align: middle;
-      margin-right: 8px;
-    "></span>
-    Salvando...
-  `;
 
   const fd = new FormData(form);
   const acao = fd.get("acao");
 
+  if (!acao) return alert("Selecione a ação.");
+
+  if (!selecionadas || selecionadas.length === 0) {
+    return alert("Selecione pelo menos 1 máquina.");
+  }
+
   const erros = validarStatus(acao, selecionadas);
   if (erros.length > 0) {
     alert("⚠️ Não é possível continuar:\n\n" + erros.join("\n"));
-    botao.disabled = false;
-    botao.innerHTML = textoOriginal;
-    botao.dataset.loading = "0";
     return;
   }
 
-  const payload = {
+  const basePayload = {
     id_evento: fd.get("id_evento"),
     acao,
     dt_saida: fd.get("dt_saida"),
     dt_retorno: fd.get("dt_retorno"),
-    obs: fd.get("obs"),
-    seriais: selecionadas
+    obs: fd.get("obs")
   };
 
-  let resp = await fetch("/api/registrar-envio", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload)
-  });
+  setLoading(botao, true);
 
-  const data = await resp.json();
+  try {
+    // 1) tenta salvar tudo
+    let payload = { ...basePayload, seriais: selecionadas };
 
-  if (data.needsPopup) {
-    const origem = prompt("⚠️ Máquina retornando sem envio registrado.\n\nInforme a origem:");
-
-    if (!origem) {
-      botao.disabled = false;
-      botao.innerHTML = textoOriginal;
-      botao.dataset.loading = "0";
-      return;
-    }
-
-    payload.obs_origem = origem;
-
-    let retry = await fetch("/api/registrar-envio", {
+    let resp = await fetch("/api/registrar-envio", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
     });
 
-    const dataRetry = await retry.json();
+    let data = await resp.json();
 
-    if (dataRetry.ok) return location.reload();
+    // 2) se precisar popup, reenviar SOMENTE os pendentes
+    if (data.needsPopup) {
+      const origem = prompt("⚠️ Máquina retornando sem envio registrado.\n\nInforme a origem:");
+      if (!origem) {
+        setLoading(botao, false);
+        return;
+      }
 
-    alert(dataRetry.msg);
+      const pendentes = Array.isArray(data.seriais) ? data.seriais : [];
+      if (pendentes.length === 0) {
+        // fallback: se vier vazio, evita duplicar e só cancela
+        alert("Não veio lista de seriais pendentes. Tente novamente.");
+        setLoading(botao, false);
+        return;
+      }
 
-    botao.disabled = false;
-    botao.innerHTML = textoOriginal;
-    botao.dataset.loading = "0";
-    return;
-  }
+      payload = { ...basePayload, seriais: pendentes, obs_origem: origem };
 
-  if (data.ok) {
-    location.reload();
-  } else {
+      let retry = await fetch("/api/registrar-envio", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      data = await retry.json();
+    }
+
+    if (data.ok) {
+      // atualiza lista sem reload
+      await refreshMaquinas();
+
+      // limpa seleção e form
+      selecionadas = [];
+      form.reset();
+      aplicarRegrasCampos();
+      renderLista();
+      renderSel();
+
+      setLoading(botao, false);
+      return;
+    }
+
     alert(data.msg || "Erro ao salvar.");
-    botao.disabled = false;
-    botao.innerHTML = textoOriginal;
-    botao.dataset.loading = "0";
+    setLoading(botao, false);
+
+  } catch (err) {
+    console.error("❌ submit envio:", err);
+    alert("Erro interno no front.");
+    setLoading(botao, false);
   }
 });
 
