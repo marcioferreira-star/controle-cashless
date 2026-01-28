@@ -1,5 +1,5 @@
 <%- include('partials/header') %>
-<%- include('partials/sidebar', { page: 'envio' }) %>
+<%- include('partials/sidebar', { page: 'envio', user }) %>
 
 <style>
   .section-title {
@@ -113,6 +113,20 @@
     margin-bottom: 10px;
     font-size: 15px;
     height: 38px;
+  }
+
+  /* ✅ MOBILE: quebra em coluna */
+  @media (max-width: 900px){
+    .area-flex{
+      flex-direction: column;
+    }
+    .lista-maquinas,
+    .selecionadas-box{
+      height: 280px;
+    }
+    .btn-registrar{
+      max-width: 100%;
+    }
   }
 </style>
 

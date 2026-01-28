@@ -1,5 +1,5 @@
 <%- include('partials/header') %>
-<%- include('partials/sidebar', { page }) %>
+<%- include('partials/sidebar', { page, user }) %>
 
 <style>
   .filters-box {
@@ -24,6 +24,7 @@
     border: none;
     cursor: pointer;
     color: #fff;
+    white-space: nowrap;
   }
 
   .btn-limpar { background: #555; }
@@ -39,8 +40,16 @@
   .table-wrapper {
     max-height: 68vh;
     overflow-y: auto;
+    overflow-x: auto;                /* ✅ scroll horizontal */
+    -webkit-overflow-scrolling: touch;
     border-radius: 8px;
     border: 1px solid #c9c9c9;
+  }
+
+  table {
+    width: 100%;
+    min-width: 900px;                /* ✅ evita esmagar colunas */
+    border-collapse: collapse;
   }
 
   thead th {
@@ -51,12 +60,14 @@
     padding: 10px;
     font-size: 14px;
     z-index: 5;
+    white-space: nowrap;             /* ✅ não quebra letra por letra */
   }
 
   tbody td {
     padding: 10px;
     background: #fff;
     border-bottom: 1px solid #eee;
+    white-space: nowrap;             /* ✅ não quebra letra por letra */
   }
 
   .btn-salvar {
@@ -68,6 +79,20 @@
     cursor: pointer;
   }
 
+  /* ✅ MOBILE: filtros quebram linha */
+  @media (max-width: 900px){
+    .filters-box{
+      flex-wrap: wrap;
+    }
+    .filters-box input,
+    .filters-box select{
+      flex: 1 1 48%;
+      min-width: 160px;
+    }
+    .btn-limpar, .btn-exportar{
+      flex: 1 1 48%;
+    }
+  }
 </style>
 
 <div class="main-content">
@@ -150,10 +175,10 @@
 
           <td><%= m.empresa || '-' %></td>
 
-          <!-- ✅ NOVO: Fixo também mostra evento -->
+          <!-- ✅ Fixo também mostra evento -->
           <td><%= (m.status.startsWith("Em Uso") || m.status === "Fixo") ? (m.idEvento || '-') : "-" %></td>
 
-          <!-- ✅ NOVO: Fixo também mostra retorno (vai ser "-") -->
+          <!-- ✅ Fixo também mostra retorno (vai ser "-") -->
           <td><%= (m.status.startsWith("Em Uso") || m.status === "Fixo") ? (m.dataRetorno || '-') : "-" %></td>
 
           <td>
@@ -239,7 +264,7 @@ function aplicarFiltros() {
 
         const diff = Math.floor((dt - hoje) / 86400000);
 
-        // ✅ NOVO: atrasada só faz sentido pra Em Uso, não pra Fixo
+        // ✅ atrasada só faz sentido pra Em Uso, não pra Fixo
         if (ret === "atrasada" && !(status.startsWith("Em Uso") && diff < 0))
           mostrar = false;
 
