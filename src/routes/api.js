@@ -32,6 +32,7 @@ function toBR(dateStr) {
   return `${d}/${m}/${y}`;
 }
 
+// converte "dd/mm/aaaa" para timestamp (para comparar datas)
 function parseBRDateToTime(br) {
   if (!br || br === "-") return 0;
   const [d, m, y] = String(br).split("/");
@@ -39,6 +40,7 @@ function parseBRDateToTime(br) {
   return new Date(Number(y), Number(m) - 1, Number(d)).getTime();
 }
 
+// garante que o "último envio" seja o mais recente pela data de saída
 function getUltimoEnvio(registros) {
   const envios = (registros || []).filter(r =>
     String(r.acao || "").includes("Envio")
@@ -60,6 +62,7 @@ function getUltimoEnvio(registros) {
   return ultimo;
 }
 
+// retorno deve usar primeiro os dados atuais do CONTROLE (mais confiável)
 function temOrigemControle(maquina) {
   const id = String(maquina?.idEvento || "").trim();
   return id && id !== "-" && id !== "0";
@@ -67,6 +70,9 @@ function temOrigemControle(maquina) {
 
 /* ======================================================
    POST /api/registrar-envio
+   - aceita:
+     seriais: [{ serial, linha }]
+     seriais: ["SERIAL"] (compat/popup/testes)
 ====================================================== */
 router.post("/registrar-envio", async (req, res) => {
   try {
@@ -80,6 +86,9 @@ router.post("/registrar-envio", async (req, res) => {
       obs_origem
     } = req.body;
 
+    /* ============================
+       VALIDAÇÕES BÁSICAS
+    ============================ */
     if (!acao) return res.json({ ok: false, msg: "Selecione a ação." });
 
     if (!Array.isArray(seriais) || seriais.length === 0) {
@@ -96,14 +105,18 @@ router.post("/registrar-envio", async (req, res) => {
        FLUXO DE ENVIO
     ============================ */
     if (isEnvio) {
-      if (!id_evento?.trim())
+      if (!id_evento?.trim()) {
         return res.json({ ok: false, msg: "Informe o ID do evento." });
+      }
 
-      if (!dt_saida)
+      if (!dt_saida) {
         return res.json({ ok: false, msg: "Data de saída obrigatória." });
+      }
 
-      if (!isEnvioFixo && !dt_retorno)
+      // retorno só é obrigatório quando NÃO for Envio Fixo
+      if (!isEnvioFixo && !dt_retorno) {
         return res.json({ ok: false, msg: "Data de retorno obrigatória." });
+      }
 
       eventoInfo = await getEventoInfo(id_evento);
 
@@ -118,12 +131,19 @@ router.post("/registrar-envio", async (req, res) => {
     /* ============================
        CARREGAMENTOS ÚNICOS
     ============================ */
+    // ⚠️ histórico só é necessário no Retorno (fallback de origem)
     const historicoCompleto = isRetorno ? await getHistorico() : [];
+    // ⚠️ index é usado para:
+    // - resolver linha quando não veio no payload
+    // - resolver origem do controle (idEvento/nomeEvento/etc) no retorno
     const idxMaquinas = await getMaquinasIndex();
 
     const hoje = hojeBR();
     const autor = req.session.user?.nome || "Sistema";
 
+    /* ============================
+       ACUMULADORES
+    ============================ */
     const valueUpdates = [];
     const historicoRows = [];
     const pendenciasPopup = [];
@@ -131,14 +151,12 @@ router.post("/registrar-envio", async (req, res) => {
 
     /* ============================
        LOOP PRINCIPAL
-       - aceita:
-         seriais: [{serial, linha}]
-         seriais: ["SERIAL"] (compat/popup/testes)
     ============================ */
     for (const item of seriais) {
       let serial = "";
       let linha = 0;
 
+      // compat: serial puro (string)
       if (typeof item === "string") {
         serial = String(item).trim();
       } else if (item && typeof item === "object") {
@@ -151,16 +169,14 @@ router.post("/registrar-envio", async (req, res) => {
         continue;
       }
 
-      // Se não veio linha, usa o index
       const maquina = idxMaquinas.get(serial);
-
       if (!maquina) {
         erros.push({ serial, step: "not-found" });
         continue;
       }
 
+      // se linha não veio no payload, usa a do index
       if (!linha) linha = Number(maquina.linha || 0);
-
       if (!linha) {
         erros.push({ serial, step: "no-line" });
         continue;
@@ -172,6 +188,7 @@ router.post("/registrar-envio", async (req, res) => {
       if (isRetorno) {
         const statusFinal = acao.replace("Retorno", "Estoque");
 
+        // ✅ ORIGEM preferencial: dados atuais do CONTROLE
         let origem = null;
 
         if (temOrigemControle(maquina)) {
@@ -183,6 +200,7 @@ router.post("/registrar-envio", async (req, res) => {
             saida: String(maquina.dataSaida || "-")
           };
         } else {
+          // fallback: pega o último envio pelo histórico
           const registros = historicoCompleto.filter(
             h => String(h.serial || "").trim() === serial
           );
@@ -199,13 +217,17 @@ router.post("/registrar-envio", async (req, res) => {
           }
         }
 
-        // 1) retorno sem origem -> popup
+        /* -------------------------------
+           1) RETORNO sem origem (sem controle e sem histórico)
+        ------------------------------- */
         if (!origem && !obs_origem) {
           pendenciasPopup.push(serial);
           continue;
         }
 
-        // 2) retorno órfão com origem manual
+        /* -------------------------------
+           2) RETORNO órfão com origem manual
+        ------------------------------- */
         if (!origem && obs_origem) {
           historicoRows.push([
             serial,
@@ -233,7 +255,9 @@ router.post("/registrar-envio", async (req, res) => {
           continue;
         }
 
-        // 3) retorno normal
+        /* -------------------------------
+           3) RETORNO NORMAL
+        ------------------------------- */
         historicoRows.push([
           serial,
           origem.evento,
@@ -264,7 +288,11 @@ router.post("/registrar-envio", async (req, res) => {
            FLUXO DE ENVIO (NORMAL / FIXO)
       ========================================= */
       const dataSaidaBR = toBR(dt_saida);
+
+      // Envio Fixo salva retorno como "-"
       const dataRetornoBR = isEnvioFixo ? "-" : toBR(dt_retorno);
+
+      // Status "Fixo" quando for Envio Fixo
       const statusFinal = isEnvioFixo ? "Fixo" : acao.replace("Envio", "Em Uso");
 
       historicoRows.push([
@@ -320,6 +348,9 @@ router.post("/registrar-envio", async (req, res) => {
       if (!okBatch) erros.push({ step: "values-batch-update" });
     }
 
+    /* ======================================================
+       RETORNO FINAL
+    ======================================================= */
     if (erros.length > 0) {
       return res.json({
         ok: false,
@@ -351,12 +382,16 @@ router.post("/atualizar-status", async (req, res) => {
     if (!m) return res.json({ ok: false, msg: "Serial não encontrado." });
 
     const updates = [];
+
+    // Atualiza STATUS (coluna G)
     updates.push({ range: `'${SHEET_NAME}'!G${m.linha}`, value: status });
 
+    // Se virou FIXO → limpa retorno (coluna O) pra não ficar data antiga
     if (status === "Fixo") {
       updates.push({ range: `'${SHEET_NAME}'!O${m.linha}`, value: "-" });
     }
 
+    // Se virou ESTOQUE → limpa evento e retorno (mantém planilha coerente)
     if (status.startsWith("Estoque")) {
       updates.push(
         { range: `'${SHEET_NAME}'!J${m.linha}`, value: "-" },
