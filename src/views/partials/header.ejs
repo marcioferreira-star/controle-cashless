@@ -2,66 +2,140 @@
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Maquininhas</title>
   <link rel="stylesheet" href="/css/style.css" />
+
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: #f4f6f9;
+    }
+
+    /* =========================
+       LAYOUT BASE (DESKTOP)
+    ========================== */
+    .app-shell{
+      min-height: 100vh;
+      display: flex;
+      width: 100%;
+    }
+
+    /* sidebar (desktop) */
+    .sidebar{
+      width: 220px;
+      flex: 0 0 220px;
+      background: #0b3b8f;
+      color: #fff;
+      min-height: 100vh;
+    }
+
+    /* área direita (header + conteúdo) */
+    .app-main{
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* header topo */
+    .top-header{
+      height: 60px;
+      background: #fff;
+      border-bottom: 1px solid #e5e5e5;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      gap: 12px;
+    }
+
+    .btn-menu{
+      display: none; /* só aparece no mobile */
+      border: 1px solid #ddd;
+      background: #fff;
+      border-radius: 10px;
+      padding: 8px 10px;
+      font-size: 18px;
+      line-height: 1;
+      cursor: pointer;
+    }
+
+    .top-header-right{
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .user-info{
+      font-size: 15px;
+      font-weight: 600;
+      color: #333;
+      white-space: nowrap;
+    }
+
+    .logout-btn{
+      background: #ff4d4d;
+      padding: 8px 14px;
+      border-radius: 8px;
+      color: white !important;
+      font-weight: 700;
+      text-decoration: none;
+      transition: 0.2s;
+      white-space: nowrap;
+    }
+    .logout-btn:hover{ background: #cc0000; }
+
+    /* conteúdo padrão */
+    .main-content{
+      padding: 18px;
+      width: 100%;
+      min-width: 0;
+    }
+
+    /* overlay (mobile) */
+    .overlay{
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.35);
+      z-index: 998;
+    }
+    .overlay.show{ display: block; }
+
+    /* =========================
+       MOBILE
+    ========================== */
+    @media (max-width: 900px){
+      .app-shell{ display: block; }
+
+      .btn-menu{ display: inline-flex; align-items:center; justify-content:center; }
+
+      /* sidebar vira drawer */
+      .sidebar{
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 100vh;
+        width: 84vw;
+        max-width: 320px;
+        transform: translateX(-100%);
+        transition: transform .2s ease;
+        z-index: 999;
+        overflow-y: auto;
+      }
+      .sidebar.open{ transform: translateX(0); }
+
+      .main-content{ padding: 12px; }
+    }
+  </style>
 </head>
 
 <body>
 
-<style>
-  /* Header Superior */
-  .top-header {
-    width: calc(100% - 220px);   /* 100% menos a sidebar */
-    margin-left: 220px;          /* empurra o header para a direita */
-    background: #ffffff;
-    padding: 12px 22px;
-    display: flex;
-    justify-content: flex-end;    /* tudo alinhado à direita */
-    align-items: center;
-    border-bottom: 1px solid #e5e5e5;
-    position: fixed;
-    top: 0;
-    z-index: 50;
-    height: 60px;
-  }
+<div class="overlay" id="overlay" onclick="closeMenu()"></div>
 
-  .user-info {
-    font-size: 15px;
-    font-weight: 600;
-    color: #333;
-    margin-right: 18px;
-  }
-
-  .logout-btn {
-    background: #ff4d4d;
-    padding: 8px 14px;
-    border-radius: 6px;
-    color: white !important;
-    font-weight: bold;
-    text-decoration: none;
-    transition: 0.2s;
-  }
-
-  .logout-btn:hover {
-    background: #cc0000;
-  }
-
-  body {
-    padding-top: 65px; /* distância para o header fixo */
-    margin: 0;
-  }
-</style>
-
-<!-- ======================== HEADER FIXO ========================= -->
-<div class="top-header">
-
-  <!-- DIREITA: NOME DO USUÁRIO + SAIR -->
-  <div style="display:flex; align-items:center;">
-    <div class="user-info">
-      👤 <%= (user && user.nome) ? user.nome : "Usuário" %>
-    </div>
-
-    <a href="/logout" class="logout-btn">Sair</a>
-  </div>
-
-</div>
+<div class="app-shell">

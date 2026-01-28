@@ -1,26 +1,35 @@
-<div class="sidebar">
-  <div class="logo">
-    <img 
-      src="https://www.ingresse.com/_next/static/media/logo-ingresse-colorful.c63e2f05.svg" 
-      alt="Ingresse" 
+<div class="sidebar" id="sidebar">
+  <div class="logo" style="padding:18px 16px; border-bottom:1px solid rgba(255,255,255,0.12);">
+    <img
+      src="https://www.ingresse.com/_next/static/media/logo-ingresse-colorful.c63e2f05.svg"
+      alt="Ingresse"
+      style="width:160px; height:auto;"
     />
   </div>
 
-  <ul>
-    <li class="<%= page === 'dashboard' ? 'active' : '' %>">
-      <a href="/">Dashboard</a>
+  <ul style="list-style:none; padding: 12px; margin:0;">
+    <li class="<%= page === 'dashboard' ? 'active' : '' %>" style="margin-bottom:8px;">
+      <a href="/" style="display:block; padding:12px 12px; border-radius:10px; color:#fff; text-decoration:none;">
+        Dashboard
+      </a>
     </li>
 
-    <li class="<%= page === 'maquinas' ? 'active' : '' %>">
-      <a href="/maquinas">Máquinas Cadastradas</a>
+    <li class="<%= page === 'maquinas' ? 'active' : '' %>" style="margin-bottom:8px;">
+      <a href="/maquinas" style="display:block; padding:12px 12px; border-radius:10px; color:#fff; text-decoration:none;">
+        Máquinas Cadastradas
+      </a>
     </li>
 
-    <li class="<%= page === 'envio' ? 'active' : '' %>">
-      <a href="/envio">Envio / Retorno</a>
+    <li class="<%= page === 'envio' ? 'active' : '' %>" style="margin-bottom:8px;">
+      <a href="/envio" style="display:block; padding:12px 12px; border-radius:10px; color:#fff; text-decoration:none;">
+        Envio / Retorno
+      </a>
     </li>
 
-    <li class="<%= page === 'historico' ? 'active' : '' %>">
-      <a href="/historico">Histórico</a>
+    <li class="<%= page === 'historico' ? 'active' : '' %>" style="margin-bottom:8px;">
+      <a href="/historico" style="display:block; padding:12px 12px; border-radius:10px; color:#fff; text-decoration:none;">
+        Histórico
+      </a>
     </li>
   </ul>
 </div>

@@ -1,6 +1,32 @@
-  <footer style="text-align:center; padding:18px 0; color:#555; font-size:14px;">
-    © 2025 Ingresse. Todos os direitos reservados.
-  </footer>
+  </div> <!-- app-main -->
+</div> <!-- app-shell -->
+
+<script>
+  function openMenu(){
+    var sidebar = document.getElementById('sidebar');
+    var overlay = document.getElementById('overlay');
+    if (sidebar) sidebar.classList.add('open');
+    if (overlay) overlay.classList.add('show');
+  }
+
+  function closeMenu(){
+    var sidebar = document.getElementById('sidebar');
+    var overlay = document.getElementById('overlay');
+    if (sidebar) sidebar.classList.remove('open');
+    if (overlay) overlay.classList.remove('show');
+  }
+
+  function toggleMenu(){
+    var sidebar = document.getElementById('sidebar');
+    if (!sidebar) return;
+    if (sidebar.classList.contains('open')) closeMenu();
+    else openMenu();
+  }
+</script>
+
+<footer style="text-align:center; padding:18px 0; color:#555; font-size:14px;">
+  © 2025 Ingresse. Todos os direitos reservados.
+</footer>
 
 </body>
 </html>
