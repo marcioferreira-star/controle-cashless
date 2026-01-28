@@ -60,7 +60,6 @@
       padding: 0 16px;
       gap: 12px;
       min-width: 0;
-      position: relative;
     }
 
     .btn-menu{
@@ -146,24 +145,3 @@
 <div class="overlay" id="overlay" onclick="closeMenu()"></div>
 
 <div class="app-shell">
-
-  <div class="app-main">
-    <div class="top-header">
-
-      <!-- ✅ BOTÃO ORIGINAL (mantido) -->
-      <button class="btn-menu" onclick="openMenu()">☰</button>
-
-      <!-- ✅ NOVO BOTÃO VISUAL (mobile) -->
-      <input type="checkbox" id="menuToggle" class="menu-toggle" onclick="openMenu()">
-      <label for="menuToggle" class="menu-btn">
-        <span></span>
-        <span></span>
-        <span></span>
-      </label>
-
-      <div class="top-header-right">
-        <div class="user-info"><%= user?.nome || '' %></div>
-        <a href="/logout" class="logout-btn">Sair</a>
-      </div>
-
-    </div>
