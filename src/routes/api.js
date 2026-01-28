@@ -128,7 +128,7 @@ router.post("/registrar-envio", async (req, res) => {
     /* ============================
        CARREGAMENTOS ÚNICOS
     ============================ */
-    const idxMaquinas = await getMaquinasIndex();
+    
     const historicoCompleto = isRetorno ? await getHistorico() : [];
 
     const hoje = hojeBR();
@@ -145,9 +145,15 @@ router.post("/registrar-envio", async (req, res) => {
     /* ============================
        LOOP PRINCIPAL
     ============================ */
-    for (const serialRaw of seriais) {
-      const serial = String(serialRaw).trim();
-      const maquina = idxMaquinas.get(serial);
+    for (const item of seriais) {
+  const serial = String(item.serial).trim();
+  const linha = Number(item.linha);
+
+  if (!linha) {
+    erros.push({ serial, step: "no-line" });
+    continue;
+  }
+
 
       if (!maquina) {
         erros.push({ serial, step: "not-found" });

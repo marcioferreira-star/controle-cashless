@@ -467,7 +467,11 @@ form.addEventListener("submit", async (e) => {
 
   try {
     // 1) tenta salvar tudo
-    let payload = { ...basePayload, seriais: selecionadas };
+    let payload = { ...basePayload, seriais: selecionadas.map(s => {
+  const m = maquinas.find(x => x.serial === s);
+  return { serial: s, linha: m.linha };
+})
+ };
 
     let resp = await fetch("/api/registrar-envio", {
       method: "POST",
