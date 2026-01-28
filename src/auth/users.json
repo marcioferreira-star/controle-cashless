@@ -2,11 +2,12 @@
   {
     "nome": "Marcio",
     "email": "marcio.ferreira@ingresse.com",
-    "senha": "$2b$10$gByEK8qCmI8M/wctYEOJGuf5kGHmpKhf1u8m7DVw3BhUz3mR5OEi."
+    "senha": "$2b$10$tguFrvJrWv8JSizRrv6c0OnlrdAaOsyrkW6sxWR1xW.AR8QN.5XQu"
   },
   {
     "nome": "Thiago",
     "email": "thiago.ribeiro@ingresse.com",
-    "senha": "$2b$10$gByEK8qCmI8M/wctYEOJGuf5kGHmpKhf1u8m7DVw3BhUz3mR5OEi." 
+    "senha": "$2b$10$tguFrvJrWv8JSizRrv6c0OnlrdAaOsyrkW6sxWR1xW.AR8QN.5XQu"
   }
+  
 ]
