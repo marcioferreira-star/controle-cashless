@@ -337,8 +337,8 @@ export async function getHistorico() {
     if (!dados || dados.length === 0) return [];
 
     return dados.map(l => ({
-      serial: l[0] || "-",
-      evento: l[1] || "-",
+      serial: String(l[0] || "-").trim(),
+      evento: String(l[1] || "-").trim(),
       acao: l[2] || "-",
       saida: l[3] || "-",
       retorno: l[4] || "-",
@@ -348,8 +348,7 @@ export async function getHistorico() {
       produtora: l[8] || "-",
       comercial: l[9] || "-",
       obs: l[10] || "-"
-    }))
-    .reverse();;
+    }));
 
   } catch (err) {
     console.error("❌ Erro getHistorico:", err);

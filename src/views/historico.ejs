@@ -196,7 +196,7 @@
           <% if (!historico || historico.length === 0) { %>
             <tr><td colspan="11" class="empty-msg">Nenhum registro encontrado</td></tr>
           <% } else { %>
-            <% historico.forEach(h => { %>
+            <% [...historico].reverse().forEach(h => { %>
               <tr>
                 <td><%= h.serial || "-" %></td>
                 <td><%= h.evento || "-" %></td>
