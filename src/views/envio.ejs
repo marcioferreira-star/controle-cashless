@@ -403,7 +403,7 @@ form.addEventListener("submit", async (e) => {
   btnRegistrar.textContent = "Registrando...";
 
   try {
-    const resp = await fetch("/api/registrar-movimentacao", {
+    const resp = await fetch("/api/registrar-envio", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
