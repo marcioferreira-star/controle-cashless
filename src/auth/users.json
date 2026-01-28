@@ -8,6 +8,31 @@
     "nome": "Thiago",
     "email": "thiago.ribeiro@ingresse.com",
     "senha": "$2b$10$tguFrvJrWv8JSizRrv6c0OnlrdAaOsyrkW6sxWR1xW.AR8QN.5XQu"
+  },
+  {
+    "nome": "Tamara",
+    "email": "tamara.pontes@ingresse.com",
+    "senha": "$2b$10$tguFrvJrWv8JSizRrv6c0OnlrdAaOsyrkW6sxWR1xW.AR8QN.5XQu"
+  },
+  {
+    "nome": "Katherine",
+    "email": "katherine.uche@ingresse.com",
+    "senha": "$2b$10$tguFrvJrWv8JSizRrv6c0OnlrdAaOsyrkW6sxWR1xW.AR8QN.5XQu"
+  },
+  {
+    "nome": "Aline",
+    "email": "aline.vasconcellos@ingresse.com",
+    "senha": "$2b$10$tguFrvJrWv8JSizRrv6c0OnlrdAaOsyrkW6sxWR1xW.AR8QN.5XQu"
+  },
+  {
+    "nome": "Juliana",
+    "email": "juliana.neri@ingresse.com",
+    "senha": "$2b$10$tguFrvJrWv8JSizRrv6c0OnlrdAaOsyrkW6sxWR1xW.AR8QN.5XQu"
+  },
+  {
+    "nome": "Will",
+    "email": "willian.jesus@ingresse.com",
+    "senha": "$2b$10$tguFrvJrWv8JSizRrv6c0OnlrdAaOsyrkW6sxWR1xW.AR8QN.5XQu"
   }
   
 ]
