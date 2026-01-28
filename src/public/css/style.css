@@ -8,35 +8,34 @@
   font-family: "Inter", sans-serif;
 }
 
-body {
-  display: flex;
-  background-color: #f5f6fa;
-  color: #222;
+html, body {
+  width: 100%;
+  max-width: 100%;
   overflow-x: hidden;
 }
 
+body {
+  background-color: #f5f6fa;
+  color: #222;
+}
+
 /* =============================================== */
-/* === SIDEBAR === */
+/* === SIDEBAR (BASE) === */
 /* =============================================== */
+/* ⚠️ A sidebar agora é controlada pelo layout do header.ejs
+   No desktop ela fica “normal” (não fixed), no mobile vira drawer via media query do header.ejs.
+*/
 .sidebar {
-  width: 220px;
   background-color: #003d99;
   color: white;
-  height: 100vh;
-  position: fixed;
-  left: 0;
-  top: 0;
-  display: flex;
-  flex-direction: column;
-  padding-top: 25px;
-  padding-left: 20px;
+  min-height: 100vh;
 }
 
 .sidebar .logo {
   display: flex;
   align-items: center;
   width: 100%;
-  margin-bottom: 35px;
+  margin-bottom: 18px;
 }
 
 .sidebar .logo img {
@@ -73,11 +72,15 @@ body {
 /* =============================================== */
 /* === CONTEÚDO PRINCIPAL === */
 /* =============================================== */
+/* ✅ Agora quem posiciona é o layout do header.ejs (app-shell/app-main).
+   Então NÃO use margin-left nem width calc aqui.
+*/
 .main-content {
-  margin-left: 220px;
-  padding: 40px;
-  min-height: 100vh;
-  width: calc(100% - 220px);
+  padding: 18px;
+  min-height: calc(100vh - 60px);
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   background-color: #f5f6fa;
 }
 
@@ -87,7 +90,7 @@ h1, h2 {
 }
 
 /* =============================================== */
-/* === CARDS DO DASHBOARD === */
+/* === CARDS DO DASHBOARD (LEGADO) === */
 /* =============================================== */
 .cards-container {
   display: flex;
@@ -147,6 +150,7 @@ th, td {
   padding: 10px 12px;
   border-bottom: 1px solid #e5e5e5;
   text-align: left;
+  vertical-align: middle;
 }
 
 th {
@@ -176,19 +180,15 @@ button:hover,
 }
 
 /* =============================================== */
-/* === FOOTER FIXO === */
+/* === FOOTER === */
 /* =============================================== */
+/* ✅ Não é mais fixo (o footer do footer.ejs já tá ok) */
 footer {
   text-align: center;
   padding: 15px;
   background-color: #f5f6fa;
   color: #555;
   border-top: 1px solid #e0e0e0;
-  position: fixed;
-  width: calc(100% - 220px);
-  bottom: 0;
-  margin-left: 220px;
-  z-index: 10;
 }
 
 /* =============================================== */
@@ -229,10 +229,9 @@ footer {
   display: flex;
   justify-content: flex-start;
   align-items: center;
-  gap: 20px;      /* ← Aproxima o campo da esquerda */
+  gap: 20px;
   margin-bottom: 12px;
 }
-
 
 .titulo-lista input {
   width: 200px;
@@ -276,6 +275,15 @@ footer {
   display: flex;
   justify-content: space-between;
   border: 1px solid #c9d8ff;
+  gap: 10px;
+  min-width: 0;
+}
+
+.selecionadas-box li span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* Remover */
@@ -293,6 +301,7 @@ footer {
   cursor: pointer;
   transition: 0.2s ease;
   box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+  flex: 0 0 auto;
 }
 
 .btn-remover:hover {

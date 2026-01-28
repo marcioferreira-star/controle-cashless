@@ -10,7 +10,7 @@
       margin: 0 0 18px 0;
     }
 
-    /* ✅ grid responsivo que NÃO corta o último card no desktop */
+    /* ✅ evita “corte” no desktop */
     .kpis{
       display: grid !important;
       grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -18,10 +18,8 @@
       width: 100%;
       max-width: 100%;
       min-width: 0;
-      align-items: stretch;
     }
 
-    /* ✅ se quiser 5 colunas só quando tiver espaço de verdade */
     @media (min-width: 1500px){
       .kpis{
         grid-template-columns: repeat(5, minmax(220px, 1fr));

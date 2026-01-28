@@ -10,7 +10,7 @@
   <style>
     * { box-sizing: border-box; }
 
-    /* ✅ Evita corte/scroll horizontal “do site inteiro” */
+    /* ✅ Evita “corte”/overflow geral */
     html, body{
       width: 100%;
       max-width: 100%;
@@ -38,8 +38,6 @@
     .sidebar{
       width: 220px;
       flex: 0 0 220px;
-      background: #0b3b8f;
-      color: #fff;
       min-height: 100vh;
     }
 
@@ -65,7 +63,7 @@
     }
 
     .btn-menu{
-      display: none; /* só aparece no modo mobile */
+      display: none;
       border: 1px solid #ddd;
       background: #fff;
       border-radius: 10px;
@@ -106,15 +104,6 @@
     }
     .logout-btn:hover{ background: #cc0000; }
 
-    /* conteúdo padrão */
-    .main-content{
-      padding: 18px;
-      width: 100%;
-      max-width: 100%;
-      min-width: 0;
-      overflow-x: hidden; /* ✅ site não “anda” pro lado */
-    }
-
     /* overlay (mobile) */
     .overlay{
       display: none;
@@ -147,8 +136,6 @@
         overflow-y: auto;
       }
       .sidebar.open{ transform: translateX(0); }
-
-      .main-content{ padding: 12px; }
     }
   </style>
 </head>
