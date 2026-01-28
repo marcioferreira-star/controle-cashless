@@ -2,7 +2,6 @@
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8" />
-  <!-- ✅ viewport correto -->
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Maquininhas</title>
 
@@ -11,11 +10,11 @@
   <style>
     * { box-sizing: border-box; }
 
-    /* ❌ NÃO TRAVA o site no mobile */
+    /* ✅ Evita corte/scroll horizontal “do site inteiro” */
     html, body{
       width: 100%;
       max-width: 100%;
-      overflow-x: auto;
+      overflow-x: hidden;
     }
 
     body {
@@ -32,6 +31,7 @@
       display: flex;
       width: 100%;
       max-width: 100%;
+      overflow-x: hidden;
     }
 
     /* sidebar (desktop) */
@@ -112,6 +112,7 @@
       width: 100%;
       max-width: 100%;
       min-width: 0;
+      overflow-x: hidden; /* ✅ site não “anda” pro lado */
     }
 
     /* overlay (mobile) */
@@ -125,8 +126,7 @@
     .overlay.show{ display: block; }
 
     /* =========================
-       ✅ MOBILE (breakpoint maior)
-       - resolve quando o browser renderiza como 980px
+       ✅ MOBILE
     ========================== */
     @media (max-width: 1200px){
       .app-shell{ display: block; }

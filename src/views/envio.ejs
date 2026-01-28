@@ -8,7 +8,6 @@
     margin-bottom: 8px;
   }
 
-  /* ✅ CORREÇÃO: flex sem estourar a tela no desktop */
   .area-flex {
     display: flex;
     gap: 20px;
@@ -16,16 +15,13 @@
     align-items: stretch;
   }
 
-  /* ✅ CORREÇÃO: não use width:100% em duas colunas */
   .box {
     background: #fff;
     border: 1px solid #dcdcdc;
     border-radius: 8px;
     padding: 15px;
-
-    flex: 1;
+    width: 100%;
     min-width: 0;
-    width: auto;
   }
 
   .lista-maquinas {
@@ -53,6 +49,33 @@
     background: #f7faff;
     padding: 10px;
     overflow-y: auto;
+  }
+
+  /* ✅ lista selecionadas: botão nunca some */
+  #listaSelecionadas {
+    margin: 0;
+    padding: 0;
+  }
+  #listaSelecionadas li{
+    list-style: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 8px 10px;
+    margin-bottom: 8px;
+    background: #fff;
+    border: 1px solid #d7d7d7;
+    border-radius: 8px;
+    min-width: 0;
+  }
+  #listaSelecionadas li .serial-text{
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 600;
+    color: #333;
   }
 
   .campo {
@@ -105,9 +128,9 @@
     padding: 2px 10px;
     border-radius: 6px;
     cursor: pointer;
-    font-size: 14px;
+    font-size: 16px;
     font-weight: bold;
-    margin-left: 8px;
+    flex: 0 0 auto;
   }
 
   .btn-remove:hover {
@@ -122,16 +145,7 @@
     height: 38px;
   }
 
-  /* ✅ melhora o bloco das datas (não estoura) */
-  #grpDatas{
-    width: 100%;
-  }
-  #grpDatas .campo{
-    flex: 1;
-    min-width: 200px;
-  }
-
-  /* ✅ MOBILE: quebra em coluna */
+  /* ✅ MOBILE */
   @media (max-width: 900px){
     .area-flex{
       flex-direction: column;
@@ -164,7 +178,7 @@
     <div class="box">
       <div class="section-title">Selecionadas</div>
       <div class="selecionadas-box">
-        <ul id="listaSelecionadas" style="padding-left: 12px; margin:0;"></ul>
+        <ul id="listaSelecionadas"></ul>
       </div>
     </div>
 
@@ -182,389 +196,245 @@
           <option value="Envio SP">Envio SP</option>
           <option value="Envio RJ">Envio RJ</option>
           <option value="Envio URA">Envio URA</option>
+
           <option value="Envio Fixo">Envio Fixo</option>
+
           <option value="Retorno SP">Retorno SP</option>
           <option value="Retorno RJ">Retorno RJ</option>
           <option value="Retorno URA">Retorno URA</option>
         </select>
       </div>
 
-      <div class="campo" id="grpIdEvento" style="display:none;">
-        <label>ID do Evento</label>
-        <input type="text" class="form-control" name="id_evento" id="id_evento">
+      <div class="campo" id="grpIdEvento">
+        <label>ID Evento</label>
+        <input type="number" name="idEvento" id="idEvento" class="form-control" placeholder="Ex: 66689">
       </div>
 
-      <div class="area-flex" id="grpDatas" style="display:none;">
-        <div class="campo">
-          <label>Data de Saída</label>
-          <input type="date" class="form-control" name="dt_saida" id="dt_saida">
-        </div>
-
-        <div class="campo">
-          <label>Data de Retorno</label>
-          <input type="date" class="form-control" name="dt_retorno" id="dt_retorno">
-        </div>
+      <div class="campo" id="grpDataRetorno">
+        <label>Data Retorno</label>
+        <input type="date" name="dataRetorno" id="dataRetorno" class="form-control">
       </div>
 
       <div class="campo">
         <label>Observações</label>
-        <textarea class="form-control" name="obs" id="obs"></textarea>
+        <textarea name="obs" id="obs" class="form-control" rows="3" placeholder="Opcional..."></textarea>
       </div>
 
     </div>
 
-    <button class="btn-registrar" type="submit">Salvar Envio / Retorno</button>
+    <button type="submit" class="btn-registrar" id="btnRegistrar">
+      Registrar movimentação
+    </button>
 
   </form>
 
 </div>
 
-<%- include('partials/footer') %>
-
 <script>
-/* =======================================================
-      DADOS (inicial)
-======================================================= */
-let maquinas = <%- JSON.stringify(maquinas || []) %>;
+/* ===============================
+   DADOS DO SERVIDOR
+=============================== */
+const maquinas = <%- JSON.stringify(maquinas || []) %>;
+
+/* ===============================
+   ESTADO
+=============================== */
 let selecionadas = [];
-
-/* Mapa serial → status (mantido sempre atualizado) */
 let maquinasPorSerial = {};
-function rebuildIndex() {
-  maquinasPorSerial = {};
-  (maquinas || []).forEach(m => {
-    maquinasPorSerial[m.serial] = m.status || "-";
-  });
-}
-rebuildIndex();
 
-/* ELEMENTOS */
+/* ===============================
+   ELEMENTOS
+=============================== */
 const lista = document.getElementById("listaMaquinas");
 const listaSel = document.getElementById("listaSelecionadas");
-const filtro = document.getElementById("buscaSerial");
+const busca = document.getElementById("buscaSerial");
 const acaoSelect = document.getElementById("acaoSelect");
 const grpIdEvento = document.getElementById("grpIdEvento");
-const grpDatas = document.getElementById("grpDatas");
-const idEvento = document.getElementById("id_evento");
-const dtSaida = document.getElementById("dt_saida");
-const dtRetorno = document.getElementById("dt_retorno");
+const grpDataRetorno = document.getElementById("grpDataRetorno");
+const form = document.getElementById("formEnvio");
+const btnRegistrar = document.getElementById("btnRegistrar");
 
-/* wrapper do campo retorno (pra esconder no Envio Fixo) */
-const campoRetorno = dtRetorno.parentElement;
+/* ===============================
+   INDEXAR STATUS POR SERIAL
+=============================== */
+maquinas.forEach(m => {
+  const serial = String(m.serial || "").trim();
+  maquinasPorSerial[serial] = String(m.status || "").trim();
+});
 
-/* =======================================================
-      REGRAS DE CAMPOS
-======================================================= */
-function aplicarRegrasCampos() {
-  const acao = acaoSelect.value;
-
-  if (!acao) {
-    grpIdEvento.style.display = "none";
-    grpDatas.style.display = "none";
-    idEvento.required = false;
-    dtSaida.required = false;
-    dtRetorno.required = false;
-    campoRetorno.style.display = "";
-    return;
-  }
-
-  if (acao.includes("Envio")) {
-    grpIdEvento.style.display = "";
-    grpDatas.style.display = "";
-    idEvento.required = true;
-    dtSaida.required = true;
-
-    if (acao === "Envio Fixo") {
-      dtRetorno.required = false;
-      dtRetorno.value = "";
-      campoRetorno.style.display = "none";
-    } else {
-      dtRetorno.required = true;
-      campoRetorno.style.display = "";
-    }
-  }
-
-  if (acao.includes("Retorno")) {
-    grpIdEvento.style.display = "none";
-    grpDatas.style.display = "none";
-    idEvento.required = false;
-    dtSaida.required = false;
-    dtRetorno.required = false;
-
-    campoRetorno.style.display = "";
-
-    idEvento.value = "";
-    dtSaida.value = "";
-    dtRetorno.value = "";
-  }
-}
-acaoSelect.addEventListener("change", aplicarRegrasCampos);
-
-/* =======================================================
-      LISTA
-======================================================= */
-function renderLista() {
+/* ===============================
+   RENDER LISTA
+=============================== */
+function renderLista(filtro = "") {
   lista.innerHTML = "";
-  const raw = (filtro.value || "").toLowerCase();
 
-  let termos = raw
-    .replace(/[\s-]+/g, "")
-    .split(/[,;\n\r]+/g)
-    .map(t => t.trim())
-    .filter(t => t);
+  const f = filtro.toLowerCase().trim();
 
-  let total = 0;
+  const filtradas = maquinas.filter(m => {
+    const serial = String(m.serial || "").toLowerCase();
+    return !f || serial.includes(f);
+  });
 
-  (maquinas || []).forEach(m => {
-    const serialLimpo = String(m.serial || "").toLowerCase().replace(/[\s-]+/g, "");
-    if (!serialLimpo) return;
-
-    if (termos.length > 0 && !termos.some(t => serialLimpo.includes(t)))
-      return;
-
-    total++;
+  filtradas.forEach(m => {
+    const serial = String(m.serial || "").trim();
+    const status = String(m.status || "").trim();
 
     const div = document.createElement("div");
-    div.className = "item-maq" + (selecionadas.includes(m.serial) ? " selecionada" : "");
-    div.textContent = `${m.serial} - ${m.status || "-"}`;
+    div.className = "item-maq";
+    div.textContent = `${serial} - ${status}`;
+
+    if (selecionadas.includes(serial)) div.classList.add("selecionada");
 
     div.onclick = () => {
-      if (selecionadas.includes(m.serial)) {
-        selecionadas = selecionadas.filter(x => x !== m.serial);
+      if (selecionadas.includes(serial)) {
+        selecionadas = selecionadas.filter(x => x !== serial);
       } else {
-        selecionadas.push(m.serial);
+        selecionadas.push(serial);
       }
-      renderLista();
+      renderLista(busca.value);
       renderSel();
     };
 
     lista.appendChild(div);
   });
-
-  if (total === 0) {
-    lista.innerHTML =
-      "<div style='padding:10px;color:#777'>Nenhuma máquina encontrada…</div>";
-  }
 }
-filtro.addEventListener("input", renderLista);
 
-/* =======================================================
-      LISTA SELECIONADAS
-======================================================= */
+/* ===============================
+   RENDER SELECIONADAS
+=============================== */
 function renderSel() {
   listaSel.innerHTML = "";
 
   if (selecionadas.length === 0) {
     listaSel.innerHTML =
-      "<li style='color:#777;text-align:center; list-style:none;'>Nenhuma máquina selecionada</li>";
+      "<li style='color:#777;text-align:center;justify-content:center;'>Nenhuma máquina selecionada</li>";
     return;
   }
 
   selecionadas.forEach(s => {
     const li = document.createElement("li");
-    li.style.padding = "6px";
-    li.style.listStyle = "none";
-    li.style.display = "flex";
-    li.style.alignItems = "center";
-    li.style.justifyContent = "space-between";
-    li.style.gap = "10px";
 
     li.innerHTML = `
-      <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${s}</span>
-      <button type="button" class="btn-remove" onclick="removerSel('${s}')">×</button>
+      <span class="serial-text">${s}</span>
+      <button type="button" class="btn-remove" onclick="removerSel('${s.replace(/'/g, "\\'")}')">×</button>
     `;
 
     listaSel.appendChild(li);
   });
 }
+
 function removerSel(s) {
   selecionadas = selecionadas.filter(x => x !== s);
-  renderLista();
+  renderLista(busca.value);
   renderSel();
 }
 
-/* =======================================================
-      VALIDAR STATUS
-======================================================= */
+/* ===============================
+   REGRAS DE CAMPOS (ENVIO/RETORNO)
+=============================== */
+function atualizarCamposPorAcao() {
+  const acao = acaoSelect.value || "";
+
+  const isEnvio = acao.startsWith("Envio");
+  const isFixo = acao === "Envio Fixo";
+
+  // ID evento aparece em Envio (inclusive fixo)
+  grpIdEvento.style.display = isEnvio ? "block" : "none";
+
+  // data retorno aparece em Envio que não é fixo
+  grpDataRetorno.style.display = (isEnvio && !isFixo) ? "block" : "none";
+}
+acaoSelect.addEventListener("change", atualizarCamposPorAcao);
+atualizarCamposPorAcao();
+
+/* ===============================
+   VALIDAR STATUS (exemplo simples)
+=============================== */
 function validarStatus(acao, seriais) {
   const erros = [];
 
   seriais.forEach(serial => {
     const status = String(maquinasPorSerial[serial] || "").toLowerCase();
 
-    if (acao.includes("Envio") && (status.includes("em uso") || status.includes("fixo"))) {
-      erros.push(`❌ ${serial} já está "Em Uso" ou "Fixo".`);
+    if (acao.includes("Envio")) {
+      if (status.includes("em uso") || status.includes("fixo")) {
+        erros.push(`${serial} já está em uso/fixo (${maquinasPorSerial[serial]})`);
+      }
     }
 
-    if (acao.includes("Retorno") && status.includes("estoque")) {
-      erros.push(`❌ ${serial} já está em "Estoque".`);
+    if (acao.includes("Retorno")) {
+      if (!status.includes("em uso")) {
+        erros.push(`${serial} não está em uso (status atual: ${maquinasPorSerial[serial] || "-"})`);
+      }
     }
   });
 
   return erros;
 }
 
-/* =======================================================
-      ATUALIZAR DADOS DO FRONT (sem reload)
-======================================================= */
-async function refreshMaquinas() {
-  try {
-    const resp = await fetch("/api/maquinas");
-    const data = await resp.json();
-    if (!data.ok) throw new Error(data.msg || "Falha ao carregar máquinas");
-
-    maquinas = Array.isArray(data.maquinas) ? data.maquinas : [];
-    rebuildIndex();
-
-    const set = new Set(maquinas.map(m => m.serial));
-    selecionadas = selecionadas.filter(s => set.has(s));
-
-    renderLista();
-    renderSel();
-  } catch (err) {
-    console.error("❌ refreshMaquinas:", err);
-  }
-}
-
-/* =======================================================
-      UI LOADING
-======================================================= */
-function setLoading(botao, on) {
-  if (!botao) return;
-
-  if (on) {
-    botao.dataset.loading = "1";
-    botao.disabled = true;
-    botao.dataset.original = botao.innerHTML;
-    botao.innerHTML = `
-      <span style="
-        border: 3px solid #fff;
-        border-top: 3px solid transparent;
-        border-radius: 50%;
-        width: 18px;
-        height: 18px;
-        display: inline-block;
-        animation: spin 0.7s linear infinite;
-        vertical-align: middle;
-        margin-right: 8px;
-      "></span>
-      Salvando...
-    `;
-  } else {
-    botao.disabled = false;
-    botao.dataset.loading = "0";
-    botao.innerHTML = botao.dataset.original || "Salvar Envio / Retorno";
-  }
-}
-
-/* =======================================================
-      SUBMIT
-======================================================= */
-const form = document.getElementById("formEnvio");
-
+/* ===============================
+   SUBMIT
+=============================== */
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
 
-  const botao = document.querySelector(".btn-registrar");
-  if (botao.dataset.loading === "1") return;
+  const acao = acaoSelect.value;
+  const idEvento = document.getElementById("idEvento").value;
+  const dataRetorno = document.getElementById("dataRetorno").value;
+  const obs = document.getElementById("obs").value;
 
-  const fd = new FormData(form);
-  const acao = fd.get("acao");
+  if (!acao) return alert("Selecione uma ação.");
+  if (selecionadas.length === 0) return alert("Selecione ao menos 1 máquina.");
 
-  if (!acao) return alert("Selecione a ação.");
+  // validações básicas
+  if (acao.startsWith("Envio") && !idEvento) return alert("Informe o ID do Evento.");
 
-  if (!selecionadas || selecionadas.length === 0) {
-    return alert("Selecione pelo menos 1 máquina.");
+  if (acao === "Envio Fixo") {
+    // ok sem dataRetorno
+  } else if (acao.startsWith("Envio") && !dataRetorno) {
+    return alert("Informe a Data de Retorno.");
   }
 
   const erros = validarStatus(acao, selecionadas);
-  if (erros.length > 0) {
-    alert("⚠️ Não é possível continuar:\n\n" + erros.join("\n"));
-    return;
-  }
+  if (erros.length) return alert("Ajuste antes de prosseguir:\n\n" + erros.join("\n"));
 
-  const basePayload = {
-    id_evento: fd.get("id_evento"),
-    acao,
-    dt_saida: fd.get("dt_saida"),
-    dt_retorno: fd.get("dt_retorno"),
-    obs: fd.get("obs")
-  };
-
-  setLoading(botao, true);
+  btnRegistrar.disabled = true;
+  const txtOriginal = btnRegistrar.textContent;
+  btnRegistrar.textContent = "Registrando...";
 
   try {
-    let payload = {
-      ...basePayload,
-      seriais: selecionadas.map(s => {
-        const m = (maquinas || []).find(x => x.serial === s);
-        return { serial: s, linha: m ? m.linha : 0 };
-      })
-    };
-
-    let resp = await fetch("/api/registrar-envio", {
+    const resp = await fetch("/api/registrar-movimentacao", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
+      body: JSON.stringify({
+        acao,
+        seriais: selecionadas,
+        idEvento,
+        dataRetorno,
+        obs
+      })
     });
 
-    let data = await resp.json();
-
-    if (data.needsPopup) {
-      const origem = prompt("⚠️ Máquina retornando sem envio registrado.\n\nInforme a origem:");
-      if (!origem) {
-        setLoading(botao, false);
-        return;
-      }
-
-      const pendentes = Array.isArray(data.seriais) ? data.seriais : [];
-      if (pendentes.length === 0) {
-        alert("Não veio lista de seriais pendentes. Tente novamente.");
-        setLoading(botao, false);
-        return;
-      }
-
-      const pendentesObjs = pendentes.map(s => {
-        const m = (maquinas || []).find(x => x.serial === s);
-        return { serial: s, linha: m ? m.linha : 0 };
-      });
-
-      payload = { ...basePayload, seriais: pendentesObjs, obs_origem: origem };
-
-      let retry = await fetch("/api/registrar-envio", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-
-      data = await retry.json();
-    }
+    const data = await resp.json();
 
     if (data.ok) {
-      await refreshMaquinas();
-
-      selecionadas = [];
-      form.reset();
-      aplicarRegrasCampos();
-      renderLista();
-      renderSel();
-
-      setLoading(botao, false);
-      return;
+      alert("Movimentação registrada!");
+      location.reload();
+    } else {
+      alert(data.msg || "Erro ao registrar.");
     }
-
-    alert(data.msg || "Erro ao salvar.");
-    setLoading(botao, false);
-
   } catch (err) {
-    console.error("❌ submit envio:", err);
-    alert("Erro interno no front.");
-    setLoading(botao, false);
+    alert("Erro de rede.");
+  } finally {
+    btnRegistrar.disabled = false;
+    btnRegistrar.textContent = txtOriginal;
   }
 });
 
 /* INIT */
-aplicarRegrasCampos();
-renderLista();
+busca.addEventListener("input", () => renderLista(busca.value));
+renderLista("");
 renderSel();
 </script>
+
+<%- include('partials/footer') %>
