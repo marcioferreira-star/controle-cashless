@@ -29,8 +29,41 @@ function hojeBR() {
 
 function toBR(dateStr) {
   if (!dateStr) return "-";
-  const [y, m, d] = dateStr.split("-");
+  // suporta "YYYY-MM-DD" e também "YYYY-MM-DDTHH:mm:ss..."
+  const onlyDate = String(dateStr).slice(0, 10);
+  const [y, m, d] = onlyDate.split("-");
+  if (!y || !m || !d) return "-";
   return `${d}/${m}/${y}`;
+}
+
+// ✅ NOVO: converte "dd/mm/aaaa" para timestamp (para comparar datas)
+function parseBRDateToTime(br) {
+  if (!br || br === "-") return 0;
+  const [d, m, y] = String(br).split("/");
+  if (!d || !m || !y) return 0;
+  return new Date(Number(y), Number(m) - 1, Number(d)).getTime();
+}
+
+// ✅ NOVO: garante que o "último envio" seja o mais recente pela data de saída
+function getUltimoEnvio(registros) {
+  const envios = (registros || []).filter(r =>
+    String(r.acao || "").includes("Envio")
+  );
+
+  if (envios.length === 0) return null;
+
+  let ultimo = envios[0];
+  let maior = parseBRDateToTime(ultimo.saida);
+
+  for (const r of envios) {
+    const t = parseBRDateToTime(r.saida);
+    if (t >= maior) {
+      ultimo = r;
+      maior = t;
+    }
+  }
+
+  return ultimo;
 }
 
 /* ======================================================
@@ -92,6 +125,7 @@ router.post("/registrar-envio", async (req, res) => {
     const historicoCompleto = await getHistorico();
     const idxMaquinas = await getMaquinasIndex(); // serial → linha
     const hoje = hojeBR();
+    const autor = req.session.user?.nome || "Sistema";
 
     /* ============================
        ACUMULADORES DE LOTE
@@ -118,7 +152,10 @@ router.post("/registrar-envio", async (req, res) => {
       ========================================= */
       if (isRetorno) {
         const registros = historicoCompleto.filter(h => h.serial === serial);
-        const ultimoEnvio = [...registros].reverse().find(r => r.acao.includes("Envio"));
+
+        // ✅ CORRIGIDO: pega o último envio REAL pela data de saída (não por ordem do array)
+        const ultimoEnvio = getUltimoEnvio(registros);
+
         const statusFinal = acao.replace("Retorno", "Estoque");
 
         /* -------------------------------
@@ -138,9 +175,9 @@ router.post("/registrar-envio", async (req, res) => {
             "-",
             acao,
             "-",
-            hoje,
+            hoje, // ✅ data de retorno no histórico
             statusFinal,
-            req.session.user?.nome || "Sistema",
+            autor,
             "-",
             "-",
             "-",
@@ -149,7 +186,7 @@ router.post("/registrar-envio", async (req, res) => {
 
           valueUpdates.push(
             { range: `'${SHEET_NAME}'!G${maquina.linha}`, value: statusFinal },
-            { range: `'${SHEET_NAME}'!O${maquina.linha}`, value: hoje },
+            { range: `'${SHEET_NAME}'!O${maquina.linha}`, value: hoje }, // ✅ retorno na planilha
             { range: `'${SHEET_NAME}'!J${maquina.linha}`, value: "-" },
             { range: `'${SHEET_NAME}'!K${maquina.linha}`, value: "-" },
             { range: `'${SHEET_NAME}'!L${maquina.linha}`, value: "-" },
@@ -164,12 +201,12 @@ router.post("/registrar-envio", async (req, res) => {
         ------------------------------- */
         historicoRows.push([
           serial,
-          ultimoEnvio.evento,
+          ultimoEnvio.evento, // ✅ ID do evento do último envio
           acao,
-          ultimoEnvio.saida,
-          hoje,
+          ultimoEnvio.saida,  // ✅ data de saída do último envio
+          hoje,               // ✅ data de retorno (hoje)
           statusFinal,
-          req.session.user?.nome || "Sistema",
+          autor,
           ultimoEnvio.nome_evento,
           ultimoEnvio.produtora,
           ultimoEnvio.comercial,
@@ -178,7 +215,7 @@ router.post("/registrar-envio", async (req, res) => {
 
         valueUpdates.push(
           { range: `'${SHEET_NAME}'!G${maquina.linha}`, value: statusFinal },
-          { range: `'${SHEET_NAME}'!O${maquina.linha}`, value: hoje },
+          { range: `'${SHEET_NAME}'!O${maquina.linha}`, value: hoje }, // ✅ data retorno
           { range: `'${SHEET_NAME}'!J${maquina.linha}`, value: ultimoEnvio.evento },
           { range: `'${SHEET_NAME}'!K${maquina.linha}`, value: ultimoEnvio.nome_evento },
           { range: `'${SHEET_NAME}'!L${maquina.linha}`, value: ultimoEnvio.produtora },
@@ -206,7 +243,7 @@ router.post("/registrar-envio", async (req, res) => {
         dataSaidaBR,
         dataRetornoBR,
         statusFinal,
-        req.session.user?.nome || "Sistema",
+        autor,
         eventoInfo.nome_evento,
         eventoInfo.produtora,
         eventoInfo.comercial,
