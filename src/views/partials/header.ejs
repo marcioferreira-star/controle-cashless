@@ -2,6 +2,7 @@
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8" />
+  <!-- ✅ viewport correto -->
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Maquininhas</title>
 
@@ -10,9 +11,11 @@
   <style>
     * { box-sizing: border-box; }
 
+    /* ❌ NÃO TRAVA o site no mobile */
     html, body{
       width: 100%;
-      overflow-x: hidden; /* ✅ evita “corte” lateral no desktop */
+      max-width: 100%;
+      overflow-x: auto;
     }
 
     body {
@@ -31,6 +34,7 @@
       max-width: 100%;
     }
 
+    /* sidebar (desktop) */
     .sidebar{
       width: 220px;
       flex: 0 0 220px;
@@ -39,14 +43,16 @@
       min-height: 100vh;
     }
 
+    /* área direita (header + conteúdo) */
     .app-main{
       flex: 1;
       min-width: 0;
       display: flex;
       flex-direction: column;
-      overflow-x: hidden; /* ✅ */
+      max-width: 100%;
     }
 
+    /* header topo */
     .top-header{
       height: 60px;
       background: #fff;
@@ -59,7 +65,7 @@
     }
 
     .btn-menu{
-      display: none;
+      display: none; /* só aparece no modo mobile */
       border: 1px solid #ddd;
       background: #fff;
       border-radius: 10px;
@@ -100,6 +106,7 @@
     }
     .logout-btn:hover{ background: #cc0000; }
 
+    /* conteúdo padrão */
     .main-content{
       padding: 18px;
       width: 100%;
@@ -107,6 +114,7 @@
       min-width: 0;
     }
 
+    /* overlay (mobile) */
     .overlay{
       display: none;
       position: fixed;
@@ -117,13 +125,15 @@
     .overlay.show{ display: block; }
 
     /* =========================
-       MOBILE
+       ✅ MOBILE (breakpoint maior)
+       - resolve quando o browser renderiza como 980px
     ========================== */
-    @media (max-width: 900px){
+    @media (max-width: 1200px){
       .app-shell{ display: block; }
 
       .btn-menu{ display: inline-flex; align-items:center; justify-content:center; }
 
+      /* sidebar vira drawer */
       .sidebar{
         position: fixed;
         top: 0;
