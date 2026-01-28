@@ -1,0 +1,369 @@
+<%- include('partials/header') %>
+<%- include('partials/sidebar', { page }) %>
+
+<style>
+  .filters-box {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .filters-box input,
+  .filters-box select {
+    height: 38px;
+    padding-left: 10px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    flex: 1;
+  }
+
+  .btn-limpar, .btn-exportar {
+    height: 38px;
+    padding: 0 18px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    color: #fff;
+  }
+
+  .btn-limpar { background: #555; }
+  .btn-exportar { background: #0a7cff; }
+
+  #contador {
+    font-size: 15px;
+    font-weight: bold;
+    margin-bottom: 8px;
+    color: #333;
+  }
+
+  .table-wrapper {
+    max-height: 68vh;
+    overflow-y: auto;
+    border-radius: 8px;
+    border: 1px solid #c9c9c9;
+  }
+
+  thead th {
+    position: sticky;
+    top: 0;
+    background: #0057d8;
+    color: white;
+    padding: 10px;
+    font-size: 14px;
+    z-index: 5;
+  }
+
+  tbody td {
+    padding: 10px;
+    background: #fff;
+    border-bottom: 1px solid #eee;
+  }
+
+  .btn-salvar {
+    background: #0066ff;
+    border: none;
+    padding: 6px 14px;
+    color: white;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+
+</style>
+
+<div class="main-content">
+  <h1>Máquinas Cadastradas</h1>
+
+  <div id="contador">Exibindo 0 máquinas</div>
+
+  <!-- ===================== FILTROS ===================== -->
+  <div class="filters-box">
+
+    <input type="text" id="filtroSerial" placeholder="Serials (ex: PBA123,11703)">
+
+    <select id="filtroStatus" data-label="Status">
+      <option value="">Status</option>
+    </select>
+
+    <select id="filtroEmpresa" data-label="Empresa">
+      <option value="">Empresa</option>
+    </select>
+
+    <select id="filtroEvento" data-label="ID Evento">
+      <option value="">ID Evento</option>
+    </select>
+
+    <select id="filtroRetorno" data-label="Retorno">
+      <option value="">Retorno</option>
+      <option value="hoje">Hoje</option>
+      <option value="semana">Esta Semana</option>
+      <option value="mes">Este Mês</option>
+      <option value="atrasada">Atrasadas</option>
+      <option value="emdia">Em Dia</option>
+    </select>
+
+    <button class="btn-limpar" id="btnLimpar">Limpar</button>
+    <button class="btn-exportar" id="btnExportar">Exportar Excel</button>
+  </div>
+
+  <!-- ===================== TABELA ===================== -->
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Modelo</th>
+          <th>Nº Serial</th>
+          <th>Status</th>
+          <th>Empresa</th>
+          <th>ID Evento</th>
+          <th>Data Retorno</th>
+          <th>Ação</th>
+        </tr>
+      </thead>
+
+      <tbody id="listaMaquinas">
+        <% maquinas.forEach((m, i) => { %>
+
+        <tr 
+          class="linha"
+          data-serial="<%= (m.serial || '').toLowerCase() %>"
+          data-status="<%= (m.status || '-').trim() %>"
+          data-empresa="<%= (m.empresa || '-').trim() %>"
+          data-evento="<%= (m.idEvento || '').trim() %>"
+          data-nomeevento="<%= (m.nomeEvento || '-') %>"
+          data-produtora="<%= (m.produtora || '-') %>"
+          data-comercial="<%= (m.comercial || '-') %>"
+          data-retorno="<%= (m.dataRetorno || '-') %>"
+        >
+          <td><%= i + 1 %></td>
+          <td><%= m.modelo || '-' %></td>
+          <td><%= m.serial || '-' %></td>
+
+          <td>
+            <select class="select-status" id="status_<%= m.linha %>">
+              <% const sts = ["Estoque SP","Estoque RJ","Estoque URA","Em Uso SP","Em Uso RJ","Em Uso URA","Fixo"]; %>
+              <% sts.forEach(s => { %>
+                <option value="<%= s %>" <%= (m.status === s ? "selected" : "") %>><%= s %></option>
+              <% }) %>
+            </select>
+          </td>
+
+          <td><%= m.empresa || '-' %></td>
+
+          <!-- ✅ NOVO: Fixo também mostra evento -->
+          <td><%= (m.status.startsWith("Em Uso") || m.status === "Fixo") ? (m.idEvento || '-') : "-" %></td>
+
+          <!-- ✅ NOVO: Fixo também mostra retorno (vai ser "-") -->
+          <td><%= (m.status.startsWith("Em Uso") || m.status === "Fixo") ? (m.dataRetorno || '-') : "-" %></td>
+
+          <td>
+            <button 
+              class="btn-salvar"
+              data-serial="<%= m.serial %>"
+              data-select="status_<%= m.linha %>"
+            >
+              Salvar
+            </button>
+          </td>
+        </tr>
+
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+<script>
+/* ============================================================
+      VARIÁVEIS
+============================================================ */
+const linhas = [...document.querySelectorAll(".linha")];
+const filtroSerial  = document.getElementById("filtroSerial");
+const filtroStatus  = document.getElementById("filtroStatus");
+const filtroEmpresa = document.getElementById("filtroEmpresa");
+const filtroEvento  = document.getElementById("filtroEvento");
+const filtroRetorno = document.getElementById("filtroRetorno");
+const btnLimpar     = document.getElementById("btnLimpar");
+const btnExportar   = document.getElementById("btnExportar");
+const contador      = document.getElementById("contador");
+
+/* ============================================================
+      FUNÇÃO CONTADOR
+============================================================ */
+function atualizarContador() {
+  const vis = linhas.filter(l => l.style.display !== "none").length;
+  contador.innerHTML = `Exibindo <b>${vis}</b> de <b>${linhas.length}</b> máquinas`;
+}
+
+/* ============================================================
+      APLICAR FILTROS
+============================================================ */
+function aplicarFiltros() {
+  const txt = filtroSerial.value.toLowerCase();
+  const st  = filtroStatus.value;
+  const emp = filtroEmpresa.value;
+  const ev  = filtroEvento.value;
+  const ret = filtroRetorno.value;
+
+  const hoje = new Date();
+
+  linhas.forEach(row => {
+    let mostrar = true;
+
+    const serial  = row.dataset.serial;
+    const status  = row.dataset.status;
+    const empresa = row.dataset.empresa;
+    const evento  = row.dataset.evento;
+    const retorno = row.dataset.retorno;
+
+    /* ----- Serial (múltiplos) ----- */
+    if (txt) {
+      const termos = txt.split(",").map(t => t.trim()).filter(t => t);
+      if (!termos.some(t => serial.includes(t))) mostrar = false;
+    }
+
+    if (st && status !== st) mostrar = false;
+    if (emp && empresa !== emp) mostrar = false;
+    if (ev && evento !== ev) mostrar = false;
+
+    /* ----- Filtro de retorno ----- */
+    if (ret) {
+      if (!retorno || retorno === "-") {
+        mostrar = false;
+      } else {
+        let dt = null;
+        try { dt = new Date(retorno.split("/").reverse().join("-")); }
+        catch { mostrar = false; }
+
+        const diff = Math.floor((dt - hoje) / 86400000);
+
+        // ✅ NOVO: atrasada só faz sentido pra Em Uso, não pra Fixo
+        if (ret === "atrasada" && !(status.startsWith("Em Uso") && diff < 0))
+          mostrar = false;
+
+        if (ret === "emdia" && diff < 0) mostrar = false;
+
+        if (ret === "hoje" && diff !== 0) mostrar = false;
+
+        if (ret === "semana" && !(diff >= 0 && diff <= 7)) mostrar = false;
+
+        if (ret === "mes" && dt.getMonth() !== hoje.getMonth())
+          mostrar = false;
+      }
+    }
+
+    row.style.display = mostrar ? "" : "none";
+  });
+
+  atualizarFiltrosInteligentes();
+  atualizarContador();
+}
+
+/* ============================================================
+      FILTROS INTELIGENTES
+============================================================ */
+function atualizarFiltro(select, values) {
+  const label = select.dataset.label;
+  const atual = select.value;
+
+  select.innerHTML = `<option value="">${label}</option>`;
+  values.forEach(v => {
+    const op = document.createElement("option");
+    op.value = v;
+    op.textContent = v;
+    select.appendChild(op);
+  });
+
+  if (values.includes(atual)) select.value = atual;
+}
+
+function atualizarFiltrosInteligentes() {
+  const vis = linhas.filter(l => l.style.display !== "none");
+
+  atualizarFiltro(filtroStatus,  [...new Set(vis.map(l => l.dataset.status))]);
+  atualizarFiltro(filtroEmpresa, [...new Set(vis.map(l => l.dataset.empresa))]);
+  atualizarFiltro(
+    filtroEvento,
+    [...new Set(vis.map(l => l.dataset.evento))].filter(x => x && x !== "-")
+  );
+}
+
+/* ============================================================
+      EVENTOS FILTROS
+============================================================ */
+[filtroSerial, filtroStatus, filtroEmpresa, filtroEvento, filtroRetorno]
+  .forEach(f => {
+    f.addEventListener("input", aplicarFiltros);
+    f.addEventListener("change", aplicarFiltros);
+  });
+
+/* ============================================================
+      LIMPAR
+============================================================ */
+btnLimpar.addEventListener("click", () => {
+  filtroSerial.value = "";
+  filtroStatus.value = "";
+  filtroEmpresa.value = "";
+  filtroEvento.value = "";
+  filtroRetorno.value = "";
+  aplicarFiltros();
+});
+
+/* ============================================================
+      EXPORTAR
+============================================================ */
+btnExportar.addEventListener("click", () => {
+  const vis = linhas.filter(l => l.style.display !== "none");
+  if (vis.length === 0) return alert("Nenhuma máquina filtrada.");
+
+  const dados = vis.map(l => ({
+    Modelo:     l.children[1].innerText.trim(),
+    Serial:     l.children[2].innerText.trim(),
+    Status:     l.querySelector("select").value,
+    Empresa:    l.children[4].innerText.trim(),
+    Evento:     l.dataset.evento,
+    NomeEvento: l.dataset.nomeevento,
+    Produtora:  l.dataset.produtora,
+    Comercial:  l.dataset.comercial,
+    Retorno:    l.children[6].innerText.trim()
+  }));
+
+  const ws = XLSX.utils.json_to_sheet(dados);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Máquinas");
+  XLSX.writeFile(wb, "maquinas_filtradas.xlsx");
+});
+
+/* ============================================================
+      SALVAR STATUS
+============================================================ */
+document.querySelectorAll(".btn-salvar").forEach(btn => {
+  btn.addEventListener("click", async () => {
+    const serial = btn.dataset.serial;
+    const status = document.getElementById(btn.dataset.select).value;
+
+    const resp = await fetch("/api/atualizar-status", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ serial, status })
+    });
+
+    const data = await resp.json();
+
+    if (data.ok) {
+      alert("Status atualizado!");
+      location.reload();
+    } else {
+      alert("Erro ao atualizar.");
+    }
+  });
+});
+
+/* INIT */
+atualizarFiltrosInteligentes();
+atualizarContador();
+</script>
+
+<%- include('partials/footer') %>

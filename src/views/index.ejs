@@ -1,0 +1,158 @@
+<%- include('partials/header') %>
+<%- include('partials/sidebar', { page: 'dashboard' }) %>
+
+<style>
+  .page {
+    padding: 30px;
+    max-width: 1400px;
+    margin-left: 260px;
+  }
+
+  h1 {
+    font-size: 32px;
+    font-weight: 800;
+    margin-bottom: 25px;
+  }
+
+  /* ============================
+       KPIs – Cards Horizontais
+     ============================ */
+  .kpis {
+    display: flex;
+    gap: 22px;
+    flex-wrap: wrap;
+  }
+
+  .card-kpi {
+    flex: 1;
+    min-width: 220px;
+    border-radius: 18px;
+    padding: 22px;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    position: relative;
+    overflow: hidden;
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  }
+
+  /* CORES */
+  .kpi-total      { background: #0066ff; }
+  .kpi-disp       { background: #00b894; }
+  .kpi-uso        { background: #f1c40f; color:#000; }
+  .kpi-atrasadas  { background: #e74c3c; }
+  .kpi-fixas { background: #6c5ce7; }
+
+
+  /* Ícones */
+  .kpi-icon {
+    font-size: 60px;
+    opacity: 1;
+    color: rgba(255,255,255,0.95);
+    position: absolute;
+    right: 18px;
+    bottom: 14px;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.35));
+  }
+
+  .kpi-label {
+    font-size: 16px;
+    font-weight: 500;
+  }
+
+  .kpi-value {
+    font-size: 44px;
+    font-weight: 900;
+    margin-top: 6px;
+  }
+
+  @media (max-width: 1000px) {
+    .page { margin-left: 0; }
+  }
+</style>
+
+<div class="page">
+
+  <h1>Dashboard</h1>
+
+  <!-- ================================
+          KPI CARDS
+       ================================ -->
+  <div class="kpis">
+
+    <div class="card-kpi kpi-total">
+      <div>
+        <div class="kpi-label">Total</div>
+        <div class="kpi-value" id="kpiTotal">0</div>
+      </div>
+      <div class="kpi-icon">📦</div>
+    </div>
+
+    <div class="card-kpi kpi-disp">
+      <div>
+        <div class="kpi-label">Disponíveis</div>
+        <div class="kpi-value" id="kpiDisp">0</div>
+      </div>
+      <div class="kpi-icon">✅</div>
+    </div>
+
+    <div class="card-kpi kpi-uso">
+      <div>
+        <div class="kpi-label">Em Uso</div>
+        <div class="kpi-value" id="kpiUso">0</div>
+      </div>
+      <div class="kpi-icon">🚚</div>
+    </div>
+
+    <div class="card-kpi kpi-atrasadas">
+      <div>
+        <div class="kpi-label">Atrasadas</div>
+        <div class="kpi-value" id="kpiAtras">0</div>
+      </div>
+      <div class="kpi-icon">⏰</div>
+    </div>
+    <div class="card-kpi kpi-fixas">
+      <div>
+        <div class="kpi-label">Fixas</div>
+        <div class="kpi-value" id="kpiFixas">0</div>
+      </div>
+      <div class="kpi-icon">📌</div>
+    </div>
+
+
+  </div>
+
+</div>
+
+<script>
+  /* Dados vindos do backend */
+  const resumo = <%- JSON.stringify(resumo || {}) %>;
+
+  /* ============================
+        ANIMAÇÃO DE CONTAGEM
+     ============================ */
+  function animateCount(el, target, duration = 900) {
+    let start = 0;
+    const step = 20;
+    const increment = target / (duration / step);
+
+    const counter = setInterval(() => {
+      start += increment;
+      if (start >= target) {
+        start = target;
+        clearInterval(counter);
+      }
+      el.textContent = Math.floor(start);
+    }, step);
+  }
+
+  animateCount(document.getElementById("kpiTotal"), resumo.total || 0);
+  animateCount(document.getElementById("kpiDisp"), resumo.disponiveis || 0);
+  animateCount(document.getElementById("kpiUso"), resumo.emUso || 0);
+  animateCount(document.getElementById("kpiFixas"), resumo.fixas || 0);
+  animateCount(document.getElementById("kpiAtras"), resumo.atrasadas || 0);
+
+</script>
+
+<%- include('partials/footer') %>

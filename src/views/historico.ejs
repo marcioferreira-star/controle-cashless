@@ -1,0 +1,271 @@
+<%- include('partials/header') %>
+<%- include('partials/sidebar', { page: 'historico' }) %>
+
+<style>
+/* ------------------------- */
+/* CAIXA DE FILTROS */
+/* ------------------------- */
+.filter-box {
+  background: #ffffff;
+  padding: 18px;
+  border-radius: 12px;
+  border: 1px solid #e4e4e4;
+  display: flex;
+  gap: 15px;
+  margin-bottom: 22px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+}
+
+.filter-box input,
+.filter-box select {
+  flex: 1;
+  height: 40px;
+  border-radius: 8px;
+  border: 1px solid #d0d0d0;
+  padding-left: 12px;
+  font-size: 15px;
+}
+
+/* ------------------------- */
+/* ÁREA DA TABELA */
+/* ------------------------- */
+.box-wrapper {
+  background: white;
+  padding: 0;
+  border-radius: 14px;
+  border: 1px solid #ddd;
+  overflow: hidden;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.05);
+}
+
+/* ------------------------- */
+/* CABEÇALHO */
+/* ------------------------- */
+.table-head {
+  width: 100%;
+  background: #0047B3;
+  border-bottom: 1px solid #003a94;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+  z-index: 5;
+}
+
+.table-history {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.table-history thead th {
+  padding: 12px;
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: left;
+  border-right: 1px solid rgba(255,255,255,0.1);
+}
+
+.table-history thead th:last-child {
+  border-right: none;
+}
+
+/* ------------------------- */
+/* CORPO COM SCROLL */
+/* ------------------------- */
+.table-body {
+  max-height: 490px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.table-body::-webkit-scrollbar {
+  width: 8px;
+}
+.table-body::-webkit-scrollbar-thumb {
+  background: #b7b7b7;
+  border-radius: 20px;
+}
+.table-body::-webkit-scrollbar-thumb:hover {
+  background: #929292;
+}
+
+/* ------------------------- */
+/* LINHAS DA TABELA */
+/* ------------------------- */
+.table-history tbody tr {
+  background: #fff;
+  transition: 0.15s;
+}
+
+.table-history tbody tr:nth-child(odd) {
+  background: #f7f9fc;
+}
+
+.table-history tbody tr:hover {
+  background: #eaf1ff;
+}
+
+.table-history td {
+  padding: 12px;
+  font-size: 14px;
+  border-bottom: 1px solid #f0f0f0;
+  word-wrap: break-word;
+}
+
+/* ------------------------- */
+/* SEM RESULTADOS */
+/* ------------------------- */
+.empty-msg {
+  text-align: center;
+  padding: 25px;
+  color: #777;
+  font-size: 15px;
+}
+</style>
+
+<div class="main-content">
+
+  <h1 style="margin-bottom: 22px; font-weight:700;">Histórico de Movimentações</h1>
+
+  <!-- FILTROS -->
+  <div class="filter-box">
+    <input type="text" id="filtroSerial" placeholder="Filtrar Serial">
+    <input type="text" id="filtroEvento" placeholder="Filtrar ID Evento">
+    <select id="filtroAcao">
+      <option value="">Filtrar Ação</option>
+      <option value="envio">Envio</option>
+      <option value="retorno">Retorno</option>
+      <option value="fixo">Fixo</option>
+    </select>
+  </div>
+
+  <!-- CAIXA DA TABELA -->
+  <div class="box-wrapper">
+
+    <!-- CABEÇALHO FIXO -->
+    <div class="table-head">
+      <table class="table-history">
+        <colgroup>
+          <col style="width:10%">
+          <col style="width:7%">
+          <col style="width:8%">
+          <col style="width:9%">
+          <col style="width:9%">
+          <col style="width:8%">
+          <col style="width:8%">
+          <col style="width:12%">
+          <col style="width:12%">
+          <col style="width:10%">
+          <col style="width:7%">
+        </colgroup>
+        <thead>
+          <tr>
+            <th>Nº Serial</th>
+            <th>ID Evento</th>
+            <th>Ação</th>
+            <th>Data de Envio</th>
+            <th>Data de Retorno</th>
+            <th>Status</th>
+            <th>Usuário</th>
+            <th>Nome Evento</th>
+            <th>Produtora</th>
+            <th>Comercial</th>
+            <th>Observação</th>
+          </tr>
+        </thead>
+      </table>
+    </div>
+
+    <!-- CORPO COM SCROLL -->
+    <div class="table-body">
+      <table class="table-history">
+        <colgroup>
+          <col style="width:10%">
+          <col style="width:7%">
+          <col style="width:8%">
+          <col style="width:9%">
+          <col style="width:9%">
+          <col style="width:8%">
+          <col style="width:8%">
+          <col style="width:12%">
+          <col style="width:12%">
+          <col style="width:10%">
+          <col style="width:7%">
+        </colgroup>
+        <tbody id="bodyHistorico">
+
+          <% if (!historico || historico.length === 0) { %>
+            <tr><td colspan="11" class="empty-msg">Nenhum registro encontrado</td></tr>
+          <% } else { %>
+            <% historico.forEach(h => { %>
+              <tr>
+                <td><%= h.serial || "-" %></td>
+                <td><%= h.evento || "-" %></td>
+                <td><%= h.acao || "-" %></td>
+                <td><%= h.saida || "-" %></td>
+                <td><%= h.retorno || "-" %></td>
+                <td><%= h.status || "-" %></td>
+                <td><%= h.usuario || "-" %></td>
+                <td><%= h.nome_evento || "-" %></td>
+                <td><%= h.produtora || "-" %></td>
+                <td><%= h.comercial || "-" %></td>
+                <td><%= h.obs || "-" %></td>
+              </tr>
+            <% }) %>
+          <% } %>
+
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+<%- include('partials/footer') %>
+
+<script>
+const filtroSerial = document.getElementById("filtroSerial");
+const filtroEvento = document.getElementById("filtroEvento");
+const filtroAcao   = document.getElementById("filtroAcao");
+
+const tabela = document.getElementById("bodyHistorico");
+
+/* =====================================================
+   SUPORTE A MÚLTIPLOS SERIAIS E EVENTOS
+===================================================== */
+function parseLista(value) {
+  return value
+    .toLowerCase()
+    .replace(/\s+/g, "")
+    .split(/[,;\n]+/g)
+    .filter(x => x !== "");
+}
+
+function aplicarFiltros() {
+  const listaSeriais = parseLista(filtroSerial.value);
+  const listaEventos = parseLista(filtroEvento.value);
+  const acaoFiltro   = filtroAcao.value.toLowerCase();
+
+  for (const row of tabela.rows) {
+    let show = true;
+
+    const colSerial = row.cells[0].innerText.toLowerCase().replace(/\s+/g, "");
+    const colEvento = row.cells[1].innerText.toLowerCase().replace(/\s+/g, "");
+    const colAcao   = row.cells[2].innerText.toLowerCase();
+
+    if (listaSeriais.length > 0 && !listaSeriais.some(v => colSerial.includes(v)))
+      show = false;
+
+    if (listaEventos.length > 0 && !listaEventos.some(v => colEvento.includes(v)))
+      show = false;
+
+    if (acaoFiltro && !colAcao.includes(acaoFiltro))
+      show = false;
+
+    row.style.display = show ? "" : "none";
+  }
+}
+
+filtroSerial.addEventListener("input", aplicarFiltros);
+filtroEvento.addEventListener("input", aplicarFiltros);
+filtroAcao.addEventListener("change", aplicarFiltros);
+</script>

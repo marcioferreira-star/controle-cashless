@@ -1,0 +1,478 @@
+<%- include('partials/header') %>
+<%- include('partials/sidebar', { page: 'envio' }) %>
+
+<style>
+  .section-title {
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 8px;
+  }
+
+  .area-flex {
+    display: flex;
+    gap: 20px;
+    width: 100%;
+  }
+
+  .box {
+    background: #fff;
+    border: 1px solid #dcdcdc;
+    border-radius: 8px;
+    padding: 15px;
+    width: 100%;
+  }
+
+  .lista-maquinas {
+    height: 350px;
+    overflow-y: auto;
+  }
+
+  .item-maq {
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    margin-bottom: 6px;
+    cursor: pointer;
+    background: #f8f8f8;
+  }
+
+  .item-maq.selecionada {
+    background: #dce9ff;
+    border-color: #7bb3ff;
+  }
+
+  .selecionadas-box {
+    height: 350px;
+    border: 1px dashed #bfbfbf;
+    background: #f7faff;
+    padding: 10px;
+    overflow-y: auto;
+  }
+
+  .campo {
+    margin-bottom: 12px;
+  }
+
+  .campo label {
+    font-weight: bold;
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  .btn-registrar {
+    display: block;
+    width: 100%;
+    max-width: 600px;
+    margin: 30px auto 40px;
+    background: #0066ff;
+    border: none;
+    padding: 16px;
+    font-size: 18px;
+    font-weight: 600;
+    border-radius: 8px;
+    color: white;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+    transition: 0.2s ease;
+    text-align: center;
+  }
+
+  .btn-registrar:hover {
+    background: #0053d6;
+    transform: translateY(-2px);
+  }
+
+  .btn-registrar:disabled {
+    opacity: 0.7;
+    cursor: not-allowed !important;
+  }
+
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+  }
+
+  .btn-remove {
+    background: #ff4d4d;
+    color: white;
+    border: none;
+    padding: 2px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+  }
+
+  .btn-remove:hover {
+    background: #cc0000;
+  }
+
+  #buscaSerial {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-bottom: 10px;
+    font-size: 15px;
+    height: 38px;
+  }
+</style>
+
+<div class="main-content">
+
+  <h1>Controle de Envio / Retorno</h1>
+
+  <div class="area-flex">
+
+    <!-- LISTA -->
+    <div class="box">
+      <div class="section-title">Máquinas (Serial + Status)</div>
+
+      <input id="buscaSerial" type="text" class="form-control" placeholder="Pesquisar serial...">
+      <div class="lista-maquinas" id="listaMaquinas"></div>
+    </div>
+
+    <!-- SELECIONADAS -->
+    <div class="box">
+      <div class="section-title">Selecionadas</div>
+      <div class="selecionadas-box">
+        <ul id="listaSelecionadas"></ul>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- FORMULÁRIO -->
+  <form id="formEnvio" style="margin-top: 25px;">
+
+    <div class="box">
+
+      <div class="campo">
+        <label>Ação</label>
+        <select name="acao" id="acaoSelect" class="form-control" required>
+          <option value="">Selecione...</option>
+          <option value="Envio SP">Envio SP</option>
+          <option value="Envio RJ">Envio RJ</option>
+          <option value="Envio URA">Envio URA</option>
+
+          <!-- NOVO -->
+          <option value="Envio Fixo">Envio Fixo</option>
+
+          <option value="Retorno SP">Retorno SP</option>
+          <option value="Retorno RJ">Retorno RJ</option>
+          <option value="Retorno URA">Retorno URA</option>
+        </select>
+      </div>
+
+      <div class="campo" id="grpIdEvento" style="display:none;">
+        <label>ID do Evento</label>
+        <input type="text" class="form-control" name="id_evento" id="id_evento">
+      </div>
+
+      <div class="area-flex" id="grpDatas" style="display:none;">
+        <div class="campo" style="width: 50%;">
+          <label>Data de Saída</label>
+          <input type="date" class="form-control" name="dt_saida" id="dt_saida">
+        </div>
+
+        <div class="campo" style="width: 50%;">
+          <label>Data de Retorno</label>
+          <input type="date" class="form-control" name="dt_retorno" id="dt_retorno">
+        </div>
+      </div>
+
+      <div class="campo">
+        <label>Observações</label>
+        <textarea class="form-control" name="obs" id="obs"></textarea>
+      </div>
+
+    </div>
+
+    <button class="btn-registrar" type="submit">Salvar Envio / Retorno</button>
+
+  </form>
+
+</div>
+
+<%- include('partials/footer') %>
+
+<script>
+/* =======================================================
+      DADOS
+======================================================= */
+const maquinas = <%- JSON.stringify(maquinas || []) %>;
+let selecionadas = [];
+
+/* Mapa serial → status */
+const maquinasPorSerial = {};
+maquinas.forEach(m => maquinasPorSerial[m.serial] = m.status || "-");
+
+/* ELEMENTOS */
+const lista = document.getElementById("listaMaquinas");
+const listaSel = document.getElementById("listaSelecionadas");
+const filtro = document.getElementById("buscaSerial");
+const acaoSelect = document.getElementById("acaoSelect");
+const grpIdEvento = document.getElementById("grpIdEvento");
+const grpDatas = document.getElementById("grpDatas");
+const idEvento = document.getElementById("id_evento");
+const dtSaida = document.getElementById("dt_saida");
+const dtRetorno = document.getElementById("dt_retorno");
+
+/* NOVO: wrapper do campo retorno (pra esconder no Envio Fixo) */
+const campoRetorno = dtRetorno.parentElement;
+
+/* =======================================================
+      REGRAS DE CAMPOS
+======================================================= */
+function aplicarRegrasCampos() {
+  const acao = acaoSelect.value;
+
+  if (!acao) {
+    grpIdEvento.style.display = "none";
+    grpDatas.style.display = "none";
+    idEvento.required = false;
+    dtSaida.required = false;
+    dtRetorno.required = false;
+    campoRetorno.style.display = "";
+    return;
+  }
+
+  if (acao.includes("Envio")) {
+    grpIdEvento.style.display = "";
+    grpDatas.style.display = "";
+    idEvento.required = true;
+    dtSaida.required = true;
+
+    if (acao === "Envio Fixo") {
+      dtRetorno.required = false;
+      dtRetorno.value = "";
+      campoRetorno.style.display = "none";
+    } else {
+      dtRetorno.required = true;
+      campoRetorno.style.display = "";
+    }
+  }
+
+  if (acao.includes("Retorno")) {
+    grpIdEvento.style.display = "none";
+    grpDatas.style.display = "none";
+    idEvento.required = false;
+    dtSaida.required = false;
+    dtRetorno.required = false;
+
+    /* garante que o campo retorno volte a aparecer no retorno */
+    campoRetorno.style.display = "";
+
+    idEvento.value = "";
+    dtSaida.value = "";
+    dtRetorno.value = "";
+  }
+}
+
+acaoSelect.addEventListener("change", aplicarRegrasCampos);
+
+/* =======================================================
+      LISTA
+======================================================= */
+function renderLista() {
+  lista.innerHTML = "";
+  const raw = (filtro.value || "").toLowerCase();
+
+  let termos = raw
+    .replace(/[\s-]+/g, "")
+    .split(/[,;\n\r]+/g)
+    .map(t => t.trim())
+    .filter(t => t);
+
+  let total = 0;
+
+  maquinas.forEach(m => {
+    const serialLimpo = m.serial.toLowerCase().replace(/[\s-]+/g, "");
+
+    if (termos.length > 0 && !termos.some(t => serialLimpo.includes(t)))
+      return;
+
+    total++;
+
+    const div = document.createElement("div");
+    div.className = "item-maq" + (selecionadas.includes(m.serial) ? " selecionada" : "");
+    div.textContent = `${m.serial} - ${m.status || "-"}`;
+
+    div.onclick = () => {
+      if (selecionadas.includes(m.serial)) {
+        selecionadas = selecionadas.filter(x => x !== m.serial);
+      } else {
+        selecionadas.push(m.serial);
+      }
+      renderLista();
+      renderSel();
+    };
+
+    lista.appendChild(div);
+  });
+
+  if (total === 0) {
+    lista.innerHTML =
+      "<div style='padding:10px;color:#777'>Nenhuma máquina encontrada…</div>";
+  }
+}
+
+filtro.addEventListener("input", renderLista);
+
+/* =======================================================
+      LISTA SELECIONADAS
+======================================================= */
+function renderSel() {
+  listaSel.innerHTML = "";
+
+  if (selecionadas.length === 0) {
+    listaSel.innerHTML =
+      "<li style='color:#777;text-align:center;'>Nenhuma máquina selecionada</li>";
+    return;
+  }
+
+  selecionadas.forEach(s => {
+    const li = document.createElement("li");
+    li.style.padding = "6px";
+    li.style.listStyle = "none";
+
+    li.innerHTML = `
+      ${s}
+      <button type="button" class="btn-remove" onclick="removerSel('${s}')">×</button>
+    `;
+
+    listaSel.appendChild(li);
+  });
+}
+
+function removerSel(s) {
+  selecionadas = selecionadas.filter(x => x !== s);
+  renderLista();
+  renderSel();
+}
+
+/* =======================================================
+      VALIDAR STATUS
+======================================================= */
+function validarStatus(acao, seriais) {
+  const erros = [];
+
+  seriais.forEach(serial => {
+    const status = (maquinasPorSerial[serial] || "").toLowerCase();
+
+    // ❌ Não pode enviar se já estiver em uso OU fixo
+    if (acao.includes("Envio") && (status.includes("em uso") || status.includes("fixo"))) {
+      erros.push(`❌ ${serial} já está "Em Uso" ou "Fixo".`);
+    }
+
+    // ❌ Não pode retornar se já estiver em estoque
+    if (acao.includes("Retorno") && status.includes("estoque")) {
+      erros.push(`❌ ${serial} já está em "Estoque".`);
+    }
+  });
+
+  return erros;
+}
+
+/* =======================================================
+      SUBMIT
+======================================================= */
+const form = document.getElementById("formEnvio");
+
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const botao = document.querySelector(".btn-registrar");
+  const textoOriginal = botao.innerHTML;
+
+  if (botao.dataset.loading === "1") return;
+  botao.dataset.loading = "1";
+
+  botao.disabled = true;
+  botao.innerHTML = `
+    <span style="
+      border: 3px solid #fff;
+      border-top: 3px solid transparent;
+      border-radius: 50%;
+      width: 18px;
+      height: 18px;
+      display: inline-block;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle;
+      margin-right: 8px;
+    "></span>
+    Salvando...
+  `;
+
+  const fd = new FormData(form);
+  const acao = fd.get("acao");
+
+  const erros = validarStatus(acao, selecionadas);
+  if (erros.length > 0) {
+    alert("⚠️ Não é possível continuar:\n\n" + erros.join("\n"));
+    botao.disabled = false;
+    botao.innerHTML = textoOriginal;
+    botao.dataset.loading = "0";
+    return;
+  }
+
+  const payload = {
+    id_evento: fd.get("id_evento"),
+    acao,
+    dt_saida: fd.get("dt_saida"),
+    dt_retorno: fd.get("dt_retorno"),
+    obs: fd.get("obs"),
+    seriais: selecionadas
+  };
+
+  let resp = await fetch("/api/registrar-envio", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+
+  const data = await resp.json();
+
+  if (data.needsPopup) {
+    const origem = prompt("⚠️ Máquina retornando sem envio registrado.\n\nInforme a origem:");
+
+    if (!origem) {
+      botao.disabled = false;
+      botao.innerHTML = textoOriginal;
+      botao.dataset.loading = "0";
+      return;
+    }
+
+    payload.obs_origem = origem;
+
+    let retry = await fetch("/api/registrar-envio", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    const dataRetry = await retry.json();
+
+    if (dataRetry.ok) return location.reload();
+
+    alert(dataRetry.msg);
+
+    botao.disabled = false;
+    botao.innerHTML = textoOriginal;
+    botao.dataset.loading = "0";
+    return;
+  }
+
+  if (data.ok) {
+    location.reload();
+  } else {
+    alert(data.msg || "Erro ao salvar.");
+    botao.disabled = false;
+    botao.innerHTML = textoOriginal;
+    botao.dataset.loading = "0";
+  }
+});
+
+/* INIT */
+aplicarRegrasCampos();
+renderLista();
+renderSel();
+</script>

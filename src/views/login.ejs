@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <title>Login - Controle de Maquininhas</title>
+  <link rel="stylesheet" href="/css/style.css" />
+
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: linear-gradient(135deg, #f8fbff, #eef2f7);
+      font-family: "Inter", sans-serif;
+    }
+
+    /* ===== Card Principal ===== */
+    .login-container {
+      width: 420px;
+      background: #ffffff;
+      border-radius: 22px;
+      padding: 0 35px 35px;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.14);
+      animation: fadeIn 0.4s ease;
+    }
+
+    /* ===== Área Superior / Logo ===== */
+    .top-box {
+      width: calc(100% + 70px);
+      margin-left: -35px;
+      background: linear-gradient(135deg, #9bb8ff, #7aa2ff);
+      padding: 35px 0 25px;
+      border-radius: 22px 22px 0 0;
+      text-align: center;
+      border-bottom: 1px solid #e7edf5;
+    }
+
+    .logo-ingresse {
+      width: 165px;
+      filter: drop-shadow(0 4px 8px rgba(0,0,0,0.10));
+    }
+
+    /* ===== Títulos ===== */
+    .login-title {
+      text-align: center;
+      font-size: 20px;
+      font-weight: 700;
+      margin-top: 18px;
+      color: #1d1d1d;
+    }
+
+    .login-subtitle {
+      text-align: center;
+      font-size: 13px;
+      margin-bottom: 25px;
+      color: #555;
+    }
+
+    /* ===== Inputs ===== */
+    .form-control {
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 10px;
+      border: 1px solid #ccd6e2;
+      background: #f8faff;
+      margin-top: 12px;
+      font-size: 14px;
+      outline: none;
+      transition: 0.25s;
+    }
+
+    .form-control:focus {
+      border-color: #007bff;
+      box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.15);
+    }
+
+    /* ===== Botão ===== */
+    .btn-login {
+      width: 100%;
+      margin-top: 22px;
+      padding: 13px;
+      background: #ff9800;
+      border: none;
+      border-radius: 10px;
+      color: white;
+      font-weight: 600;
+      font-size: 15px;
+      cursor: pointer;
+      transition: 0.25s;
+    }
+
+    .btn-login:hover {
+      background: #e68900;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(255, 152, 0, 0.35);
+    }
+
+    /* ===== Animação ===== */
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="login-container">
+
+    <!-- TOPO -->
+    <div class="top-box">
+      <img src="/img/logo-ingresse.svg" class="logo-ingresse">
+    </div>
+
+    <!-- TÍTULOS -->
+    <h2 class="login-title">Controle de maquininhas</h2>
+    <p class="login-subtitle">Sistema de Gestão de Equipamentos</p>
+
+    <!-- FORM -->
+    <form action="/login" method="POST">
+      <input
+        type="email"
+        name="email"
+        class="form-control"
+        placeholder="Email"
+        required
+      />
+
+      <input
+        type="password"
+        name="senha"
+        class="form-control"
+        placeholder="Senha"
+        required
+      />
+
+      <button class="btn-login">Entrar</button>
+    </form>
+
+  </div>
+
+</body>
+</html>

@@ -1,0 +1,26 @@
+<div class="sidebar">
+  <div class="logo">
+    <img 
+      src="https://www.ingresse.com/_next/static/media/logo-ingresse-colorful.c63e2f05.svg" 
+      alt="Ingresse" 
+    />
+  </div>
+
+  <ul>
+    <li class="<%= page === 'dashboard' ? 'active' : '' %>">
+      <a href="/">Dashboard</a>
+    </li>
+
+    <li class="<%= page === 'maquinas' ? 'active' : '' %>">
+      <a href="/maquinas">Máquinas Cadastradas</a>
+    </li>
+
+    <li class="<%= page === 'envio' ? 'active' : '' %>">
+      <a href="/envio">Envio / Retorno</a>
+    </li>
+
+    <li class="<%= page === 'historico' ? 'active' : '' %>">
+      <a href="/historico">Histórico</a>
+    </li>
+  </ul>
+</div>

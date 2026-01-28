@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <title>Maquininhas</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+
+<body>
+
+<style>
+  /* Header Superior */
+  .top-header {
+    width: calc(100% - 220px);   /* 100% menos a sidebar */
+    margin-left: 220px;          /* empurra o header para a direita */
+    background: #ffffff;
+    padding: 12px 22px;
+    display: flex;
+    justify-content: flex-end;    /* tudo alinhado à direita */
+    align-items: center;
+    border-bottom: 1px solid #e5e5e5;
+    position: fixed;
+    top: 0;
+    z-index: 50;
+    height: 60px;
+  }
+
+  .user-info {
+    font-size: 15px;
+    font-weight: 600;
+    color: #333;
+    margin-right: 18px;
+  }
+
+  .logout-btn {
+    background: #ff4d4d;
+    padding: 8px 14px;
+    border-radius: 6px;
+    color: white !important;
+    font-weight: bold;
+    text-decoration: none;
+    transition: 0.2s;
+  }
+
+  .logout-btn:hover {
+    background: #cc0000;
+  }
+
+  body {
+    padding-top: 65px; /* distância para o header fixo */
+    margin: 0;
+  }
+</style>
+
+<!-- ======================== HEADER FIXO ========================= -->
+<div class="top-header">
+
+  <!-- DIREITA: NOME DO USUÁRIO + SAIR -->
+  <div style="display:flex; align-items:center;">
+    <div class="user-info">
+      👤 <%= (user && user.nome) ? user.nome : "Usuário" %>
+    </div>
+
+    <a href="/logout" class="logout-btn">Sair</a>
+  </div>
+
+</div>
