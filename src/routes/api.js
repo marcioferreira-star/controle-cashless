@@ -4,16 +4,13 @@ import {
   registrarMovimento,
   getEventoInfo,
   getHistorico,
-  getMaquinasIndex // 🔥 performance: index de máquinas 1x só
+  getMaquinasIndex
 } from "../db.js";
 
-import { batchUpdateValues } from "../sheet.js"; // 🔥 updates em lote
+import { batchUpdateValues } from "../sheet.js";
 
 const router = express.Router();
 
-/* ======================================================
-   CONSTANTE NECESSÁRIA
-====================================================== */
 const SHEET_NAME = "CONTROLE MAQUININHAS PAGSEGURO - INGRESSE";
 
 /* ======================================================
@@ -29,14 +26,12 @@ function hojeBR() {
 
 function toBR(dateStr) {
   if (!dateStr) return "-";
-  // suporta "YYYY-MM-DD" e também "YYYY-MM-DDTHH:mm:ss..."
   const onlyDate = String(dateStr).slice(0, 10);
   const [y, m, d] = onlyDate.split("-");
   if (!y || !m || !d) return "-";
   return `${d}/${m}/${y}`;
 }
 
-// converte "dd/mm/aaaa" para timestamp (para comparar datas)
 function parseBRDateToTime(br) {
   if (!br || br === "-") return 0;
   const [d, m, y] = String(br).split("/");
@@ -44,7 +39,6 @@ function parseBRDateToTime(br) {
   return new Date(Number(y), Number(m) - 1, Number(d)).getTime();
 }
 
-// garante que o "último envio" seja o mais recente pela data de saída
 function getUltimoEnvio(registros) {
   const envios = (registros || []).filter(r =>
     String(r.acao || "").includes("Envio")
@@ -66,14 +60,13 @@ function getUltimoEnvio(registros) {
   return ultimo;
 }
 
-// ✅ NOVO: retorno deve usar primeiro os dados atuais do CONTROLE (mais confiável)
 function temOrigemControle(maquina) {
   const id = String(maquina?.idEvento || "").trim();
   return id && id !== "-" && id !== "0";
 }
 
 /* ======================================================
-   POST /api/registrar-envio  (VERSÃO OTIMIZADA)
+   POST /api/registrar-envio
 ====================================================== */
 router.post("/registrar-envio", async (req, res) => {
   try {
@@ -87,13 +80,11 @@ router.post("/registrar-envio", async (req, res) => {
       obs_origem
     } = req.body;
 
-    /* ============================
-       VALIDAÇÕES BÁSICAS
-    ============================ */
     if (!acao) return res.json({ ok: false, msg: "Selecione a ação." });
 
-    if (!Array.isArray(seriais) || seriais.length === 0)
+    if (!Array.isArray(seriais) || seriais.length === 0) {
       return res.json({ ok: false, msg: "Nenhuma máquina selecionada." });
+    }
 
     const isEnvio = acao.includes("Envio");
     const isRetorno = acao.includes("Retorno");
@@ -111,7 +102,6 @@ router.post("/registrar-envio", async (req, res) => {
       if (!dt_saida)
         return res.json({ ok: false, msg: "Data de saída obrigatória." });
 
-      // retorno só é obrigatório quando NÃO for Envio Fixo
       if (!isEnvioFixo && !dt_retorno)
         return res.json({ ok: false, msg: "Data de retorno obrigatória." });
 
@@ -128,15 +118,12 @@ router.post("/registrar-envio", async (req, res) => {
     /* ============================
        CARREGAMENTOS ÚNICOS
     ============================ */
-    
     const historicoCompleto = isRetorno ? await getHistorico() : [];
+    const idxMaquinas = await getMaquinasIndex();
 
     const hoje = hojeBR();
     const autor = req.session.user?.nome || "Sistema";
 
-    /* ============================
-       ACUMULADORES DE LOTE
-    ============================ */
     const valueUpdates = [];
     const historicoRows = [];
     const pendenciasPopup = [];
@@ -144,19 +131,38 @@ router.post("/registrar-envio", async (req, res) => {
 
     /* ============================
        LOOP PRINCIPAL
+       - aceita:
+         seriais: [{serial, linha}]
+         seriais: ["SERIAL"] (compat/popup/testes)
     ============================ */
     for (const item of seriais) {
-  const serial = String(item.serial).trim();
-  const linha = Number(item.linha);
+      let serial = "";
+      let linha = 0;
 
-  if (!linha) {
-    erros.push({ serial, step: "no-line" });
-    continue;
-  }
+      if (typeof item === "string") {
+        serial = String(item).trim();
+      } else if (item && typeof item === "object") {
+        serial = String(item.serial || "").trim();
+        linha = Number(item.linha || 0);
+      }
 
+      if (!serial) {
+        erros.push({ step: "invalid-serial", item });
+        continue;
+      }
+
+      // Se não veio linha, usa o index
+      const maquina = idxMaquinas.get(serial);
 
       if (!maquina) {
         erros.push({ serial, step: "not-found" });
+        continue;
+      }
+
+      if (!linha) linha = Number(maquina.linha || 0);
+
+      if (!linha) {
+        erros.push({ serial, step: "no-line" });
         continue;
       }
 
@@ -166,7 +172,6 @@ router.post("/registrar-envio", async (req, res) => {
       if (isRetorno) {
         const statusFinal = acao.replace("Retorno", "Estoque");
 
-        // ✅ ORIGEM preferencial: dados atuais do CONTROLE
         let origem = null;
 
         if (temOrigemControle(maquina)) {
@@ -178,7 +183,6 @@ router.post("/registrar-envio", async (req, res) => {
             saida: String(maquina.dataSaida || "-")
           };
         } else {
-          // fallback: pega o último envio pelo histórico
           const registros = historicoCompleto.filter(
             h => String(h.serial || "").trim() === serial
           );
@@ -195,17 +199,13 @@ router.post("/registrar-envio", async (req, res) => {
           }
         }
 
-        /* -------------------------------
-           1) RETORNO sem origem (sem controle e sem histórico)
-        ------------------------------- */
+        // 1) retorno sem origem -> popup
         if (!origem && !obs_origem) {
           pendenciasPopup.push(serial);
           continue;
         }
 
-        /* -------------------------------
-           2) RETORNO órfão com origem manual
-        ------------------------------- */
+        // 2) retorno órfão com origem manual
         if (!origem && obs_origem) {
           historicoRows.push([
             serial,
@@ -222,20 +222,18 @@ router.post("/registrar-envio", async (req, res) => {
           ]);
 
           valueUpdates.push(
-            { range: `'${SHEET_NAME}'!G${maquina.linha}`, value: statusFinal },
-            { range: `'${SHEET_NAME}'!O${maquina.linha}`, value: hoje },
-            { range: `'${SHEET_NAME}'!J${maquina.linha}`, value: "-" },
-            { range: `'${SHEET_NAME}'!K${maquina.linha}`, value: "-" },
-            { range: `'${SHEET_NAME}'!L${maquina.linha}`, value: "-" },
-            { range: `'${SHEET_NAME}'!M${maquina.linha}`, value: "-" }
+            { range: `'${SHEET_NAME}'!G${linha}`, value: statusFinal },
+            { range: `'${SHEET_NAME}'!O${linha}`, value: hoje },
+            { range: `'${SHEET_NAME}'!J${linha}`, value: "-" },
+            { range: `'${SHEET_NAME}'!K${linha}`, value: "-" },
+            { range: `'${SHEET_NAME}'!L${linha}`, value: "-" },
+            { range: `'${SHEET_NAME}'!M${linha}`, value: "-" }
           );
 
           continue;
         }
 
-        /* -------------------------------
-           3) RETORNO NORMAL (usa origem do controle ou fallback do histórico)
-        ------------------------------- */
+        // 3) retorno normal
         historicoRows.push([
           serial,
           origem.evento,
@@ -251,12 +249,12 @@ router.post("/registrar-envio", async (req, res) => {
         ]);
 
         valueUpdates.push(
-          { range: `'${SHEET_NAME}'!G${maquina.linha}`, value: statusFinal },
-          { range: `'${SHEET_NAME}'!O${maquina.linha}`, value: hoje },
-          { range: `'${SHEET_NAME}'!J${maquina.linha}`, value: origem.evento },
-          { range: `'${SHEET_NAME}'!K${maquina.linha}`, value: origem.nome_evento },
-          { range: `'${SHEET_NAME}'!L${maquina.linha}`, value: origem.produtora },
-          { range: `'${SHEET_NAME}'!M${maquina.linha}`, value: origem.comercial }
+          { range: `'${SHEET_NAME}'!G${linha}`, value: statusFinal },
+          { range: `'${SHEET_NAME}'!O${linha}`, value: hoje },
+          { range: `'${SHEET_NAME}'!J${linha}`, value: origem.evento },
+          { range: `'${SHEET_NAME}'!K${linha}`, value: origem.nome_evento },
+          { range: `'${SHEET_NAME}'!L${linha}`, value: origem.produtora },
+          { range: `'${SHEET_NAME}'!M${linha}`, value: origem.comercial }
         );
 
         continue;
@@ -266,11 +264,7 @@ router.post("/registrar-envio", async (req, res) => {
            FLUXO DE ENVIO (NORMAL / FIXO)
       ========================================= */
       const dataSaidaBR = toBR(dt_saida);
-
-      // Envio Fixo salva retorno como "-"
       const dataRetornoBR = isEnvioFixo ? "-" : toBR(dt_retorno);
-
-      // Status "Fixo" quando for Envio Fixo
       const statusFinal = isEnvioFixo ? "Fixo" : acao.replace("Envio", "Em Uso");
 
       historicoRows.push([
@@ -288,18 +282,18 @@ router.post("/registrar-envio", async (req, res) => {
       ]);
 
       valueUpdates.push(
-        { range: `'${SHEET_NAME}'!G${maquina.linha}`, value: statusFinal },
-        { range: `'${SHEET_NAME}'!O${maquina.linha}`, value: dataRetornoBR },
-        { range: `'${SHEET_NAME}'!N${maquina.linha}`, value: dataSaidaBR },
-        { range: `'${SHEET_NAME}'!J${maquina.linha}`, value: eventoInfo.id_evento },
-        { range: `'${SHEET_NAME}'!K${maquina.linha}`, value: eventoInfo.nome_evento },
-        { range: `'${SHEET_NAME}'!L${maquina.linha}`, value: eventoInfo.produtora },
-        { range: `'${SHEET_NAME}'!M${maquina.linha}`, value: eventoInfo.comercial }
+        { range: `'${SHEET_NAME}'!G${linha}`, value: statusFinal },
+        { range: `'${SHEET_NAME}'!O${linha}`, value: dataRetornoBR },
+        { range: `'${SHEET_NAME}'!N${linha}`, value: dataSaidaBR },
+        { range: `'${SHEET_NAME}'!J${linha}`, value: eventoInfo.id_evento },
+        { range: `'${SHEET_NAME}'!K${linha}`, value: eventoInfo.nome_evento },
+        { range: `'${SHEET_NAME}'!L${linha}`, value: eventoInfo.produtora },
+        { range: `'${SHEET_NAME}'!M${linha}`, value: eventoInfo.comercial }
       );
     }
 
     /* ======================================================
-       SE EXISTE MÁQUINA SEM ORIGEM → POPUP
+       POPUP
     ======================================================= */
     if (pendenciasPopup.length > 0) {
       return res.json({
@@ -311,7 +305,7 @@ router.post("/registrar-envio", async (req, res) => {
     }
 
     /* ======================================================
-       SALVAR HISTÓRICO (1 ÚNICA CHAMADA)
+       SALVAR HISTÓRICO
     ======================================================= */
     if (historicoRows.length > 0) {
       const okHist = await registrarMovimento(historicoRows);
@@ -319,16 +313,13 @@ router.post("/registrar-envio", async (req, res) => {
     }
 
     /* ======================================================
-       APLICAR TODOS OS UPDATES EM LOTE (1 ÚNICA CHAMADA)
+       BATCH UPDATE
     ======================================================= */
     if (valueUpdates.length > 0) {
       const okBatch = await batchUpdateValues(valueUpdates);
       if (!okBatch) erros.push({ step: "values-batch-update" });
     }
 
-    /* ======================================================
-       VERIFICAÇÃO FINAL
-    ======================================================= */
     if (erros.length > 0) {
       return res.json({
         ok: false,
@@ -346,7 +337,6 @@ router.post("/registrar-envio", async (req, res) => {
 
 /* ======================================================
    POST /api/atualizar-status
-   - usado pelo botão "Salvar" da tela Máquinas Cadastradas
 ====================================================== */
 router.post("/atualizar-status", async (req, res) => {
   try {
@@ -361,16 +351,12 @@ router.post("/atualizar-status", async (req, res) => {
     if (!m) return res.json({ ok: false, msg: "Serial não encontrado." });
 
     const updates = [];
-
-    // Atualiza STATUS (coluna G)
     updates.push({ range: `'${SHEET_NAME}'!G${m.linha}`, value: status });
 
-    // Se virou FIXO → limpa retorno (coluna O) pra não ficar data antiga
     if (status === "Fixo") {
       updates.push({ range: `'${SHEET_NAME}'!O${m.linha}`, value: "-" });
     }
 
-    // Se virou ESTOQUE → limpa evento e retorno (mantém planilha coerente)
     if (status.startsWith("Estoque")) {
       updates.push(
         { range: `'${SHEET_NAME}'!J${m.linha}`, value: "-" },
@@ -392,8 +378,7 @@ router.post("/atualizar-status", async (req, res) => {
 });
 
 /* ======================================================
-   ✅ GET /api/maquinas
-   - usado pra atualizar o front (sem dar reload na página)
+   GET /api/maquinas
 ====================================================== */
 router.get("/maquinas", async (req, res) => {
   try {

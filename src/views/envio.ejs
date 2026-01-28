@@ -394,7 +394,6 @@ async function refreshMaquinas() {
     renderSel();
   } catch (err) {
     console.error("❌ refreshMaquinas:", err);
-    // se falhar, mantém do jeito que está
   }
 }
 
@@ -466,12 +465,14 @@ form.addEventListener("submit", async (e) => {
   setLoading(botao, true);
 
   try {
-    // 1) tenta salvar tudo
-    let payload = { ...basePayload, seriais: selecionadas.map(s => {
-  const m = maquinas.find(x => x.serial === s);
-  return { serial: s, linha: m.linha };
-})
- };
+    // envia sempre no formato [{serial, linha}]
+    let payload = {
+      ...basePayload,
+      seriais: selecionadas.map(s => {
+        const m = (maquinas || []).find(x => x.serial === s);
+        return { serial: s, linha: m ? m.linha : 0 };
+      })
+    };
 
     let resp = await fetch("/api/registrar-envio", {
       method: "POST",
@@ -481,7 +482,7 @@ form.addEventListener("submit", async (e) => {
 
     let data = await resp.json();
 
-    // 2) se precisar popup, reenviar SOMENTE os pendentes
+    // se precisar popup, reenviar SOMENTE os pendentes (também no formato [{serial, linha}])
     if (data.needsPopup) {
       const origem = prompt("⚠️ Máquina retornando sem envio registrado.\n\nInforme a origem:");
       if (!origem) {
@@ -491,13 +492,17 @@ form.addEventListener("submit", async (e) => {
 
       const pendentes = Array.isArray(data.seriais) ? data.seriais : [];
       if (pendentes.length === 0) {
-        // fallback: se vier vazio, evita duplicar e só cancela
         alert("Não veio lista de seriais pendentes. Tente novamente.");
         setLoading(botao, false);
         return;
       }
 
-      payload = { ...basePayload, seriais: pendentes, obs_origem: origem };
+      const pendentesObjs = pendentes.map(s => {
+        const m = (maquinas || []).find(x => x.serial === s);
+        return { serial: s, linha: m ? m.linha : 0 };
+      });
+
+      payload = { ...basePayload, seriais: pendentesObjs, obs_origem: origem };
 
       let retry = await fetch("/api/registrar-envio", {
         method: "POST",
@@ -509,7 +514,6 @@ form.addEventListener("submit", async (e) => {
     }
 
     if (data.ok) {
-      // atualiza lista sem reload
       await refreshMaquinas();
 
       // limpa seleção e form
