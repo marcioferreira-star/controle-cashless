@@ -373,9 +373,29 @@ footer {
 }
 
 /* ===================================================== */
+/* === NOVO BOTÃO MENU (CORREÇÃO) ======================= */
+/* ===================================================== */
+/* ✅ No desktop: esconde o toggle novo pra não aparecer checkbox */
+.menu-toggle,
+.menu-btn {
+  display: none;
+}
+
+/* ===================================================== */
 /* === BOTÃO MENU MOBILE DESTACADO ===================== */
 /* ===================================================== */
 @media (max-width: 1200px) {
+
+  /* ✅ No mobile: esconde o botão antigo pra não duplicar */
+  .btn-menu {
+    display: none !important;
+  }
+
+  /* ✅ No mobile: mostra o botão novo */
+  .menu-toggle,
+  .menu-btn {
+    display: inline-flex;
+  }
 
   /* checkbox invisível mas clicável */
   .menu-toggle{
@@ -400,7 +420,6 @@ footer {
     background: #ffffff;
     border: 1px solid #d6d6d6;
     box-shadow: 0 8px 20px rgba(0,0,0,0.18);
-    display: inline-flex;
     align-items: center;
     justify-content: center;
     z-index: 2000;
