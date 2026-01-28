@@ -1,5 +1,5 @@
 <%- include('partials/header') %>
-<%- include('partials/sidebar', { page: 'historico' }) %>
+<%- include('partials/sidebar', { page: 'historico', user }) %>
 
 <style>
 /* ------------------------- */
@@ -47,12 +47,13 @@
   border-bottom: 1px solid #003a94;
   box-shadow: 0 2px 5px rgba(0,0,0,0.15);
   z-index: 5;
+  overflow-x: hidden; /* desktop ok */
 }
 
 .table-history {
   width: 100%;
   border-collapse: collapse;
-  table-layout: fixed;
+  table-layout: fixed; /* desktop ok */
 }
 
 .table-history thead th {
@@ -74,7 +75,7 @@
 .table-body {
   max-height: 490px;
   overflow-y: auto;
-  overflow-x: hidden;
+  overflow-x: hidden; /* no mobile a gente libera */
 }
 
 .table-body::-webkit-scrollbar {
@@ -119,6 +120,44 @@
   padding: 25px;
   color: #777;
   font-size: 15px;
+}
+
+/* ✅ MOBILE: filtros quebram e tabela vira scroll horizontal (sem texto “em pé”) */
+@media (max-width: 900px){
+  .filter-box{
+    flex-wrap: wrap;
+  }
+  .filter-box input,
+  .filter-box select{
+    flex: 1 1 48%;
+    min-width: 160px;
+  }
+
+  .box-wrapper{
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .table-head{
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .table-body{
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .table-history{
+    min-width: 1100px;
+    table-layout: auto !important;
+  }
+
+  .table-history th,
+  .table-history td{
+    white-space: nowrap;
+    word-wrap: normal;
+  }
 }
 </style>
 
@@ -268,4 +307,14 @@ function aplicarFiltros() {
 filtroSerial.addEventListener("input", aplicarFiltros);
 filtroEvento.addEventListener("input", aplicarFiltros);
 filtroAcao.addEventListener("change", aplicarFiltros);
+
+/* ✅ sincroniza scroll do cabeçalho com o corpo (ajuda MUITO no mobile) */
+(function syncScroll(){
+  const tb = document.querySelector(".table-body");
+  const th = document.querySelector(".table-head");
+  if (!tb || !th) return;
+  tb.addEventListener("scroll", () => {
+    th.scrollLeft = tb.scrollLeft;
+  });
+})();
 </script>
