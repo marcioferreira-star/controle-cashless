@@ -51,7 +51,7 @@
     overflow-y: auto;
   }
 
-  /* ✅ lista selecionadas: botão nunca some */
+  /* lista selecionadas: botão nunca some */
   #listaSelecionadas {
     margin: 0;
     padding: 0;
@@ -114,11 +114,6 @@
   .btn-registrar:disabled {
     opacity: 0.7;
     cursor: not-allowed !important;
-  }
-
-  @keyframes spin {
-    from { transform: rotate(0deg); }
-    to   { transform: rotate(360deg); }
   }
 
   .btn-remove {
@@ -196,23 +191,38 @@
           <option value="Envio SP">Envio SP</option>
           <option value="Envio RJ">Envio RJ</option>
           <option value="Envio URA">Envio URA</option>
-
           <option value="Envio Fixo">Envio Fixo</option>
-
           <option value="Retorno SP">Retorno SP</option>
           <option value="Retorno RJ">Retorno RJ</option>
           <option value="Retorno URA">Retorno URA</option>
         </select>
       </div>
 
+      <!-- ✅ ID EVENTO (só envio) -->
       <div class="campo" id="grpIdEvento">
         <label>ID Evento</label>
-        <input type="number" name="idEvento" id="idEvento" class="form-control" placeholder="Ex: 66689">
+        <!-- sem setinhas -->
+        <input
+          type="text"
+          inputmode="numeric"
+          pattern="[0-9]*"
+          name="id_evento"
+          id="idEvento"
+          class="form-control"
+          placeholder="Ex: 66689"
+        >
       </div>
 
+      <!-- ✅ DATA ENVIO / SAÍDA (só envio, inclusive fixo) -->
+      <div class="campo" id="grpDataSaida">
+        <label>Data de Envio</label>
+        <input type="date" name="dt_saida" id="dtSaida" class="form-control">
+      </div>
+
+      <!-- ✅ DATA RETORNO (só envio normal, não fixo) -->
       <div class="campo" id="grpDataRetorno">
-        <label>Data Retorno</label>
-        <input type="date" name="dataRetorno" id="dataRetorno" class="form-control">
+        <label>Data de Retorno</label>
+        <input type="date" name="dt_retorno" id="dtRetorno" class="form-control">
       </div>
 
       <div class="campo">
@@ -249,8 +259,11 @@ const lista = document.getElementById("listaMaquinas");
 const listaSel = document.getElementById("listaSelecionadas");
 const busca = document.getElementById("buscaSerial");
 const acaoSelect = document.getElementById("acaoSelect");
+
 const grpIdEvento = document.getElementById("grpIdEvento");
+const grpDataSaida = document.getElementById("grpDataSaida");
 const grpDataRetorno = document.getElementById("grpDataRetorno");
+
 const form = document.getElementById("formEnvio");
 const btnRegistrar = document.getElementById("btnRegistrar");
 
@@ -335,20 +348,27 @@ function removerSel(s) {
 function atualizarCamposPorAcao() {
   const acao = acaoSelect.value || "";
 
-  const isEnvio = acao.startsWith("Envio");
-  const isFixo = acao === "Envio Fixo";
+  const isEnvio = acao.includes("Envio");
+  const isRetorno = acao.includes("Retorno");
+  const isEnvioFixo = acao === "Envio Fixo";
 
-  // ID evento aparece em Envio (inclusive fixo)
+  // Envio: mostra ID + data envio
   grpIdEvento.style.display = isEnvio ? "block" : "none";
+  grpDataSaida.style.display = isEnvio ? "block" : "none";
 
-  // data retorno aparece em Envio que não é fixo
-  grpDataRetorno.style.display = (isEnvio && !isFixo) ? "block" : "none";
+  // Retorno: não usa essas datas no backend
+  if (isRetorno) {
+    grpDataRetorno.style.display = "none";
+  } else {
+    // Envio normal: precisa retorno; Envio Fixo: não
+    grpDataRetorno.style.display = (isEnvio && !isEnvioFixo) ? "block" : "none";
+  }
 }
 acaoSelect.addEventListener("change", atualizarCamposPorAcao);
 atualizarCamposPorAcao();
 
 /* ===============================
-   VALIDAR STATUS (exemplo simples)
+   VALIDAR STATUS (front)
 =============================== */
 function validarStatus(acao, seriais) {
   const erros = [];
@@ -363,8 +383,9 @@ function validarStatus(acao, seriais) {
     }
 
     if (acao.includes("Retorno")) {
-      if (!status.includes("em uso")) {
-        erros.push(`${serial} não está em uso (status atual: ${maquinasPorSerial[serial] || "-"})`);
+      // ✅ permite retorno de "Em Uso" e de "Fixo"
+      if (!(status.includes("em uso") || status.includes("fixo"))) {
+        erros.push(`${serial} não está em uso/fixo (status atual: ${maquinasPorSerial[serial] || "-"})`);
       }
     }
   });
@@ -375,26 +396,48 @@ function validarStatus(acao, seriais) {
 /* ===============================
    SUBMIT
 =============================== */
+async function enviarPayload(payload) {
+  const resp = await fetch("/api/registrar-envio", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+
+  // se backend devolver html por algum motivo, isso pode quebrar
+  const contentType = resp.headers.get("content-type") || "";
+  if (!contentType.includes("application/json")) {
+    const txt = await resp.text();
+    return { ok: false, msg: "Resposta inválida do servidor.", raw: txt };
+  }
+
+  return await resp.json();
+}
+
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
 
   const acao = acaoSelect.value;
-  const idEvento = document.getElementById("idEvento").value;
-  const dataRetorno = document.getElementById("dataRetorno").value;
-  const obs = document.getElementById("obs").value;
+
+  const id_evento = (document.getElementById("idEvento").value || "").trim();
+  const dt_saida = document.getElementById("dtSaida").value || "";
+  const dt_retorno = document.getElementById("dtRetorno").value || "";
+  const obs = document.getElementById("obs").value || "";
 
   if (!acao) return alert("Selecione uma ação.");
   if (selecionadas.length === 0) return alert("Selecione ao menos 1 máquina.");
 
-  // validações básicas
-  if (acao.startsWith("Envio") && !idEvento) return alert("Informe o ID do Evento.");
+  const isEnvio = acao.includes("Envio");
+  const isRetorno = acao.includes("Retorno");
+  const isEnvioFixo = acao === "Envio Fixo";
 
-  if (acao === "Envio Fixo") {
-    // ok sem dataRetorno
-  } else if (acao.startsWith("Envio") && !dataRetorno) {
-    return alert("Informe a Data de Retorno.");
+  // validações do fluxo (igual backend)
+  if (isEnvio) {
+    if (!id_evento) return alert("Informe o ID do Evento.");
+    if (!dt_saida) return alert("Informe a Data de Envio.");
+    if (!isEnvioFixo && !dt_retorno) return alert("Informe a Data de Retorno.");
   }
 
+  // valida status
   const erros = validarStatus(acao, selecionadas);
   if (erros.length) return alert("Ajuste antes de prosseguir:\n\n" + erros.join("\n"));
 
@@ -403,35 +446,39 @@ form.addEventListener("submit", async (e) => {
   btnRegistrar.textContent = "Registrando...";
 
   try {
-    const resp = await fetch("/api/registrar-envio", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        acao,
-        seriais: selecionadas,
-        id_evento: String(idEvento || "").trim(),
-        dt_saida: new Date().toISOString().slice(0, 10),
-        dt_retorno: String(dataRetorno || "").trim(),
-        obs: String(obs || "")
-      })
-    });
+    // payload alinhado ao backend
+    const payload = {
+      acao,
+      seriais: selecionadas,
+      id_evento: isEnvio ? id_evento : "",
+      dt_saida: isEnvio ? dt_saida : "",
+      dt_retorno: (isEnvio && !isEnvioFixo) ? dt_retorno : "",
+      obs
+    };
 
-    const raw = await resp.text();
+    let data = await enviarPayload(payload);
 
-    let data;
-    try {
-      data = JSON.parse(raw);
-    } catch (e) {
-      console.error("Resposta não-JSON do servidor:", raw);
-      alert("Servidor não retornou JSON. Veja o console para detalhes.");
-      return;
+    // se retorno precisar origem manual (popup)
+    if (data && data.needsPopup) {
+      const origem = prompt(
+        "Alguns seriais não possuem histórico/origem.\n\n" +
+        "Digite uma observação de origem (ex: 'Retorno sem histórico - veio do estoque X'):"
+      );
+
+      if (!origem) {
+        alert("Operação cancelada. Sem origem não é possível registrar esses retornos.");
+        return;
+      }
+
+      // reenviar com obs_origem (backend já espera isso)
+      data = await enviarPayload({ ...payload, obs_origem: origem });
     }
 
-    if (data.ok) {
+    if (data && data.ok) {
       alert("Movimentação registrada!");
       location.reload();
     } else {
-      alert(data.msg || "Erro ao registrar.");
+      alert((data && data.msg) ? data.msg : "Erro ao registrar.");
     }
   } catch (err) {
     alert("Erro de rede.");
