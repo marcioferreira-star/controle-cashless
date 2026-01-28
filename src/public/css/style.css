@@ -346,7 +346,6 @@ footer {
 }
 
 /* =============================================== */
-/* =============================================== */
 /* === RESPONSIVIDADE === */
 /* =============================================== */
 @media (max-width: 900px) {
@@ -370,5 +369,67 @@ footer {
 
   .observacoes {
     width: 100%;
+  }
+}
+
+/* ===================================================== */
+/* === BOTÃO MENU MOBILE DESTACADO ===================== */
+/* ===================================================== */
+@media (max-width: 1200px) {
+
+  /* checkbox invisível mas clicável */
+  .menu-toggle{
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    width: 44px;
+    height: 44px;
+    opacity: 0;
+    z-index: 2001;
+    cursor: pointer;
+  }
+
+  /* botão visual */
+  .menu-btn{
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: #ffffff;
+    border: 1px solid #d6d6d6;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.18);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+  }
+
+  /* 3 linhas do hamburguer */
+  .menu-btn span{
+    position: absolute;
+    width: 22px;
+    height: 2px;
+    background: #003d99;
+    border-radius: 2px;
+    transition: all .2s ease;
+  }
+
+  .menu-btn span:nth-child(1){ top: 16px; }
+  .menu-btn span:nth-child(2){ top: 21px; }
+  .menu-btn span:nth-child(3){ top: 26px; }
+
+  /* quando abrir vira X */
+  .menu-toggle:checked + .menu-btn span:nth-child(1){
+    top: 21px;
+    transform: rotate(45deg);
+  }
+  .menu-toggle:checked + .menu-btn span:nth-child(2){
+    opacity: 0;
+  }
+  .menu-toggle:checked + .menu-btn span:nth-child(3){
+    top: 21px;
+    transform: rotate(-45deg);
   }
 }
