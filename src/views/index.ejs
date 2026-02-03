@@ -2,15 +2,12 @@
 <%- include('partials/sidebar', { page: 'dashboard', user }) %>
 
 <div class="main-content">
-
   <style>
     h1 {
       font-size: 28px;
       font-weight: 800;
       margin: 0 0 18px 0;
     }
-
-    /* ✅ evita “corte” no desktop */
     .kpis{
       display: grid !important;
       grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -19,13 +16,11 @@
       max-width: 100%;
       min-width: 0;
     }
-
     @media (min-width: 1500px){
       .kpis{
         grid-template-columns: repeat(5, minmax(220px, 1fr));
       }
     }
-
     .card-kpi {
       border-radius: 18px;
       padding: 22px;
@@ -40,13 +35,11 @@
       min-width: 0;
       width: 100%;
     }
-
     .kpi-total      { background: #0066ff; }
     .kpi-disp       { background: #00b894; }
     .kpi-uso        { background: #f1c40f; color:#000; }
     .kpi-atrasadas  { background: #e74c3c; }
     .kpi-fixas      { background: #6c5ce7; }
-
     .kpi-icon {
       font-size: 58px;
       position: absolute;
@@ -55,19 +48,29 @@
       filter: drop-shadow(0 2px 4px rgba(0,0,0,0.35));
       pointer-events: none;
     }
-
     .kpi-label {
       font-size: 16px;
       font-weight: 600;
       opacity: 0.95;
     }
-
     .kpi-value {
       font-size: 44px;
       font-weight: 900;
       margin-top: 6px;
     }
-
+    .subkpis {
+      display: flex;
+      gap: 16px;
+      margin-top: -10px;
+    }
+    .subkpis .kpi-label {
+      font-size: 14px;
+      opacity: 0.85;
+    }
+    .subkpis .kpi-value {
+      font-size: 28px;
+      font-weight: bold;
+    }
     @media (max-width: 480px){
       .kpi-value{ font-size: 38px; }
     }
@@ -88,6 +91,21 @@
       <div>
         <div class="kpi-label">Disponíveis</div>
         <div class="kpi-value" id="kpiDisp">0</div>
+
+        <div class="subkpis">
+          <div style="flex:1">
+            <div class="kpi-label">SP</div>
+            <div class="kpi-value" id="kpiDispSP">0</div>
+          </div>
+          <div style="flex:1">
+            <div class="kpi-label">RJ</div>
+            <div class="kpi-value" id="kpiDispRJ">0</div>
+          </div>
+          <div style="flex:1">
+            <div class="kpi-label">URA</div>
+            <div class="kpi-value" id="kpiDispURA">0</div>
+          </div>
+        </div>
       </div>
       <div class="kpi-icon">✅</div>
     </div>
@@ -137,11 +155,13 @@
 
     animateCount(document.getElementById("kpiTotal"), resumo.total || 0);
     animateCount(document.getElementById("kpiDisp"), resumo.disponiveis || 0);
+    animateCount(document.getElementById("kpiDispSP"), resumo.disponiveisSP || 0);
+    animateCount(document.getElementById("kpiDispRJ"), resumo.disponiveisRJ || 0);
+    animateCount(document.getElementById("kpiDispURA"), resumo.disponiveisURA || 0);
     animateCount(document.getElementById("kpiUso"), resumo.emUso || 0);
     animateCount(document.getElementById("kpiFixas"), resumo.fixas || 0);
     animateCount(document.getElementById("kpiAtras"), resumo.atrasadas || 0);
   </script>
-
 </div>
 
 <%- include('partials/footer') %>

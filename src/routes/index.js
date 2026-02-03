@@ -30,8 +30,6 @@ router.get("/", async (req, res) => {
       page: "dashboard",
       maquinas,
       resumo,
-
-      // Segurança: o EJS sempre recebe as variáveis
       porStatus,
       porEmpresa,
       porLocal,
@@ -46,15 +44,16 @@ router.get("/", async (req, res) => {
     res.render("index", {
       page: "dashboard",
       maquinas: [],
-
       resumo: {
         total: 0,
         disponiveis: 0,
         emUso: 0,
-        atrasadas: 0
+        atrasadas: 0,
+        fixas: 0,
+        disponiveisSP: 0,
+        disponiveisRJ: 0,
+        disponiveisURA: 0
       },
-
-      // Fallback seguro
       porStatus: null,
       porEmpresa: null,
       porLocal: null,
