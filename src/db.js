@@ -134,13 +134,24 @@ export async function getResumo() {
     const maquinas = await getMaquinas();
     const hoje = new Date();
 
+    let disponiveisSP = 0;
+    let disponiveisRJ = 0;
+    let disponiveisURA = 0;
+
     const total = maquinas.length;
 
-    const disponiveis = maquinas.filter(m =>
-      (m.status || "").toLowerCase().includes("estoque")
-    ).length;
+    const disponiveis = maquinas.filter(m => {
+      const st = (m.status || "").toUpperCase();
 
-    // Fixo conta como em uso
+      if (st.includes("ESTOQUE")) {
+        if (st.includes("SP")) disponiveisSP++;
+        else if (st.includes("RJ")) disponiveisRJ++;
+        else if (st.includes("URA")) disponiveisURA++;
+        return true;
+      }
+      return false;
+    }).length;
+
     const emUso = maquinas.filter(m => {
       const st = (m.status || "").toLowerCase().trim();
       return st.includes("em uso") || st === "fixo";
@@ -150,7 +161,6 @@ export async function getResumo() {
       (m.status || "").toLowerCase().trim() === "fixo"
     ).length;
 
-    // atrasadas só pra "Em Uso" (fixo não tem retorno)
     const atrasadas = maquinas.filter(m => {
       if (!m.dataRetorno || m.dataRetorno.length < 8) return false;
       if ((m.status || "").toLowerCase().trim() === "fixo") return false;
@@ -161,10 +171,28 @@ export async function getResumo() {
       return (m.status || "").toLowerCase().includes("em uso") && dataRet < hoje;
     }).length;
 
-    return { total, disponiveis, emUso, fixas, atrasadas };
+    return {
+      total,
+      disponiveis,
+      disponiveisSP,
+      disponiveisRJ,
+      disponiveisURA,
+      emUso,
+      fixas,
+      atrasadas
+    };
   } catch (err) {
     console.error("❌ Erro resumo:", err);
-    return { total: 0, disponiveis: 0, emUso: 0, fixas: 0, atrasadas: 0 };
+    return {
+      total: 0,
+      disponiveis: 0,
+      disponiveisSP: 0,
+      disponiveisRJ: 0,
+      disponiveisURA: 0,
+      emUso: 0,
+      fixas: 0,
+      atrasadas: 0
+    };
   }
 }
 
