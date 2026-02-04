@@ -281,12 +281,23 @@ maquinas.forEach(m => {
 function renderLista(filtro = "") {
   lista.innerHTML = "";
 
-  const f = filtro.toLowerCase().trim();
+  // 🔥 quebra por vírgula e limpa espaços
+  const termos = filtro
+    .toLowerCase()
+    .split(",")
+    .map(t => t.trim())
+    .filter(t => t !== "");
 
   const filtradas = maquinas.filter(m => {
     const serial = String(m.serial || "").toLowerCase();
-    return !f || serial.includes(f);
+
+    // se não digitou nada, mostra tudo
+    if (termos.length === 0) return true;
+
+    // mostra se bater com QUALQUER serial digitado
+    return termos.some(t => serial.includes(t));
   });
+
 
   filtradas.forEach(m => {
     const serial = String(m.serial || "").trim();
