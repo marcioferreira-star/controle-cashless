@@ -1,7 +1,7 @@
 {
-  "name": "maquininhas-node",
+  "name": "controle-cashless",
   "version": "1.0.0",
-  "description": "Sistema de Controle de Maquininhas",
+  "description": "Sistema de Controle de Maquininhas Cashless",
   "main": "src/server.js",
   "type": "module",
   "scripts": {

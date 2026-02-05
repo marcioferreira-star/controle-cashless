@@ -1,4 +1,3 @@
-// src/routes/maquinas.js
 import express from "express";
 import { getMaquinas } from "../db.js";
 
@@ -21,16 +20,15 @@ router.get("/", async (req, res) => {
 
     res.render("maquinas", {
       page: "maquinas",
-      maquinas: listaSegura
+      maquinas: listaSegura,
     });
-
   } catch (err) {
     console.error("❌ Erro ao carregar máquinas:");
     console.error(err.stack || err);
 
     res.render("maquinas", {
       page: "maquinas",
-      maquinas: []
+      maquinas: [],
     });
   }
 });

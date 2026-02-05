@@ -1,4 +1,3 @@
-// src/routes/envio.js
 import express from "express";
 import { getMaquinas } from "../db.js";
 
@@ -18,16 +17,15 @@ router.get("/", async (req, res) => {
 
     res.render("envio", {
       page: "envio",
-      maquinas: listaSegura
+      maquinas: listaSegura,
     });
-
   } catch (err) {
     console.error("❌ Erro ao carregar máquinas na rota /envio:");
     console.error(err.stack || err);
 
     res.render("envio", {
       page: "envio",
-      maquinas: []
+      maquinas: [],
     });
   }
 });

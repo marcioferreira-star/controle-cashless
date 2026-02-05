@@ -1,4 +1,3 @@
-// src/routes/historico.js
 import express from "express";
 import { getHistorico } from "../db.js";
 
@@ -21,16 +20,15 @@ router.get("/", async (req, res) => {
 
     res.render("historico", {
       page: "historico",
-      historico: listaSegura
+      historico: listaSegura,
     });
-
   } catch (err) {
     console.error("❌ Erro ao carregar histórico:");
     console.error(err.stack || err);
 
     res.render("historico", {
       page: "historico",
-      historico: []
+      historico: [],
     });
   }
 });

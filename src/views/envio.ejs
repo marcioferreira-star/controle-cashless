@@ -2,32 +2,10 @@
 <%- include('partials/sidebar', { page: 'envio', user }) %>
 
 <style>
-  .section-title {
-    font-size: 18px;
-    font-weight: bold;
-    margin-bottom: 8px;
-  }
-
-  .area-flex {
-    display: flex;
-    gap: 20px;
-    width: 100%;
-    align-items: stretch;
-  }
-
-  .box {
-    background: #fff;
-    border: 1px solid #dcdcdc;
-    border-radius: 8px;
-    padding: 15px;
-    width: 100%;
-    min-width: 0;
-  }
-
-  .lista-maquinas {
-    height: 350px;
-    overflow-y: auto;
-  }
+  .section-title { font-size: 18px; font-weight: bold; margin-bottom: 8px; }
+  .area-flex { display: flex; gap: 20px; width: 100%; align-items: stretch; }
+  .box { background: #fff; border: 1px solid #dcdcdc; border-radius: 8px; padding: 15px; width: 100%; min-width: 0; }
+  .lista-maquinas { height: 350px; overflow-y: auto; }
 
   .item-maq {
     padding: 10px;
@@ -37,11 +15,7 @@
     cursor: pointer;
     background: #f8f8f8;
   }
-
-  .item-maq.selecionada {
-    background: #dce9ff;
-    border-color: #7bb3ff;
-  }
+  .item-maq.selecionada { background: #dce9ff; border-color: #7bb3ff; }
 
   .selecionadas-box {
     height: 350px;
@@ -51,11 +25,7 @@
     overflow-y: auto;
   }
 
-  /* lista selecionadas: botão nunca some */
-  #listaSelecionadas {
-    margin: 0;
-    padding: 0;
-  }
+  #listaSelecionadas { margin: 0; padding: 0; }
   #listaSelecionadas li{
     list-style: none;
     display: flex;
@@ -78,15 +48,8 @@
     color: #333;
   }
 
-  .campo {
-    margin-bottom: 12px;
-  }
-
-  .campo label {
-    font-weight: bold;
-    display: block;
-    margin-bottom: 4px;
-  }
+  .campo { margin-bottom: 12px; }
+  .campo label { font-weight: bold; display: block; margin-bottom: 4px; }
 
   .btn-registrar {
     display: block;
@@ -105,16 +68,8 @@
     transition: 0.2s ease;
     text-align: center;
   }
-
-  .btn-registrar:hover {
-    background: #0053d6;
-    transform: translateY(-2px);
-  }
-
-  .btn-registrar:disabled {
-    opacity: 0.7;
-    cursor: not-allowed !important;
-  }
+  .btn-registrar:hover { background: #0053d6; transform: translateY(-2px); }
+  .btn-registrar:disabled { opacity: 0.7; cursor: not-allowed !important; }
 
   .btn-remove {
     background: #ff4d4d;
@@ -127,10 +82,7 @@
     font-weight: bold;
     flex: 0 0 auto;
   }
-
-  .btn-remove:hover {
-    background: #cc0000;
-  }
+  .btn-remove:hover { background: #cc0000; }
 
   #buscaSerial {
     width: 100% !important;
@@ -140,32 +92,21 @@
     height: 38px;
   }
 
-  /* ✅ MOBILE */
   @media (max-width: 900px){
-    .area-flex{
-      flex-direction: column;
-    }
-    .lista-maquinas,
-    .selecionadas-box{
-      height: 280px;
-    }
-    .btn-registrar{
-      max-width: 100%;
-    }
+    .area-flex{ flex-direction: column; }
+    .lista-maquinas, .selecionadas-box{ height: 280px; }
+    .btn-registrar{ max-width: 100%; }
   }
 </style>
 
 <div class="main-content">
-
-  <h1>Controle de Envio / Retorno</h1>
+  <h1>Controle de Movimentação</h1>
 
   <div class="area-flex">
-
     <!-- LISTA -->
     <div class="box">
       <div class="section-title">Máquinas (Serial + Status)</div>
-
-      <input id="buscaSerial" type="text" class="form-control" placeholder="Pesquisar serial...">
+      <input id="buscaSerial" type="text" class="form-control" placeholder="Pesquisar serial... (aceita vírgula: 123, 456)">
       <div class="lista-maquinas" id="listaMaquinas"></div>
     </div>
 
@@ -176,68 +117,54 @@
         <ul id="listaSelecionadas"></ul>
       </div>
     </div>
-
   </div>
 
   <!-- FORMULÁRIO -->
   <form id="formEnvio" style="margin-top: 25px;">
-
     <div class="box">
-
       <div class="campo">
         <label>Ação</label>
-        <select name="acao" id="acaoSelect" class="form-control" required>
+        <select name="acao_ui" id="acaoSelect" class="form-control" required>
           <option value="">Selecione...</option>
-          <option value="Envio SP">Envio SP</option>
-          <option value="Envio RJ">Envio RJ</option>
-          <option value="Envio URA">Envio URA</option>
-          <option value="Envio Fixo">Envio Fixo</option>
-          <option value="Retorno SP">Retorno SP</option>
-          <option value="Retorno RJ">Retorno RJ</option>
-          <option value="Retorno URA">Retorno URA</option>
+          <option value="ENVIO">Envio</option>
+          <option value="ENVIO_FIXO">Envio Fixo</option>
+          <option value="RETORNO">Retorno</option>
+          <option value="MANUTENCAO">Manutenção</option>
         </select>
       </div>
 
-      <!-- ✅ ID EVENTO (só envio) -->
-      <div class="campo" id="grpIdEvento">
-        <label>ID Evento</label>
-        <!-- sem setinhas -->
+      <div class="campo" id="grpLocal">
+        <label>Local</label>
+        <select name="local" id="localSelect" class="form-control" required>
+          <option value="">Selecione...</option>
+          <option value="SP">SP</option>
+          <option value="RJ">RJ</option>
+          <option value="URA">URA</option>
+        </select>
+      </div>
+
+      <!-- Evento: só faz sentido para ENVIO / ENVIO_FIXO -->
+      <div class="campo" id="grpEvento">
+        <label>Evento</label>
         <input
           type="text"
-          inputmode="numeric"
-          pattern="[0-9]*"
-          name="id_evento"
-          id="idEvento"
+          name="evento"
+          id="evento"
           class="form-control"
-          placeholder="Ex: 66689"
+          placeholder="Ex: Carnaval RJ 2026 (ou ID interno se você preferir)"
         >
-      </div>
-
-      <!-- ✅ DATA ENVIO / SAÍDA (só envio, inclusive fixo) -->
-      <div class="campo" id="grpDataSaida">
-        <label>Data de Envio</label>
-        <input type="date" name="dt_saida" id="dtSaida" class="form-control">
-      </div>
-
-      <!-- ✅ DATA RETORNO (só envio normal, não fixo) -->
-      <div class="campo" id="grpDataRetorno">
-        <label>Data de Retorno</label>
-        <input type="date" name="dt_retorno" id="dtRetorno" class="form-control">
       </div>
 
       <div class="campo">
         <label>Observações</label>
-        <textarea name="obs" id="obs" class="form-control" rows="3" placeholder="Opcional..."></textarea>
+        <textarea name="observacoes" id="observacoes" class="form-control" rows="3" placeholder="Opcional..."></textarea>
       </div>
-
     </div>
 
     <button type="submit" class="btn-registrar" id="btnRegistrar">
       Registrar movimentação
     </button>
-
   </form>
-
 </div>
 
 <script>
@@ -259,10 +186,10 @@ const lista = document.getElementById("listaMaquinas");
 const listaSel = document.getElementById("listaSelecionadas");
 const busca = document.getElementById("buscaSerial");
 const acaoSelect = document.getElementById("acaoSelect");
+const localSelect = document.getElementById("localSelect");
 
-const grpIdEvento = document.getElementById("grpIdEvento");
-const grpDataSaida = document.getElementById("grpDataSaida");
-const grpDataRetorno = document.getElementById("grpDataRetorno");
+const grpEvento = document.getElementById("grpEvento");
+const grpLocal = document.getElementById("grpLocal");
 
 const form = document.getElementById("formEnvio");
 const btnRegistrar = document.getElementById("btnRegistrar");
@@ -281,7 +208,6 @@ maquinas.forEach(m => {
 function renderLista(filtro = "") {
   lista.innerHTML = "";
 
-  // 🔥 quebra por vírgula e limpa espaços
   const termos = filtro
     .toLowerCase()
     .split(",")
@@ -290,14 +216,9 @@ function renderLista(filtro = "") {
 
   const filtradas = maquinas.filter(m => {
     const serial = String(m.serial || "").toLowerCase();
-
-    // se não digitou nada, mostra tudo
     if (termos.length === 0) return true;
-
-    // mostra se bater com QUALQUER serial digitado
     return termos.some(t => serial.includes(t));
   });
-
 
   filtradas.forEach(m => {
     const serial = String(m.serial || "").trim();
@@ -337,12 +258,10 @@ function renderSel() {
 
   selecionadas.forEach(s => {
     const li = document.createElement("li");
-
     li.innerHTML = `
       <span class="serial-text">${s}</span>
       <button type="button" class="btn-remove" onclick="removerSel('${s.replace(/'/g, "\\'")}')">×</button>
     `;
-
     listaSel.appendChild(li);
   });
 }
@@ -354,27 +273,20 @@ function removerSel(s) {
 }
 
 /* ===============================
-   REGRAS DE CAMPOS (ENVIO/RETORNO)
+   REGRAS POR AÇÃO
+   - Evento só aparece no envio/envio fixo
+   - Local sempre obrigatório (você pode mudar depois)
 =============================== */
 function atualizarCamposPorAcao() {
   const acao = acaoSelect.value || "";
+  const isEnvio = (acao === "ENVIO" || acao === "ENVIO_FIXO");
 
-  const isEnvio = acao.includes("Envio");
-  const isRetorno = acao.includes("Retorno");
-  const isEnvioFixo = acao === "Envio Fixo";
+  grpEvento.style.display = isEnvio ? "block" : "none";
 
-  // Envio: mostra ID + data envio
-  grpIdEvento.style.display = isEnvio ? "block" : "none";
-  grpDataSaida.style.display = isEnvio ? "block" : "none";
-
-  // Retorno: não usa essas datas no backend
-  if (isRetorno) {
-    grpDataRetorno.style.display = "none";
-  } else {
-    // Envio normal: precisa retorno; Envio Fixo: não
-    grpDataRetorno.style.display = (isEnvio && !isEnvioFixo) ? "block" : "none";
-  }
+  // se não for envio, limpa evento para não mandar lixo
+  if (!isEnvio) document.getElementById("evento").value = "";
 }
+
 acaoSelect.addEventListener("change", atualizarCamposPorAcao);
 atualizarCamposPorAcao();
 
@@ -387,16 +299,18 @@ function validarStatus(acao, seriais) {
   seriais.forEach(serial => {
     const status = String(maquinasPorSerial[serial] || "").toLowerCase();
 
-    if (acao.includes("Envio")) {
-      if (status.includes("em uso") || status.includes("fixo")) {
-        erros.push(`${serial} já está em uso/fixo (${maquinasPorSerial[serial]})`);
+    if (acao === "ENVIO" || acao === "ENVIO_FIXO") {
+      // para envio, exige estoque
+      if (!status.includes("estoque")) {
+        erros.push(`${serial} não está em estoque (status atual: ${maquinasPorSerial[serial] || "-"})`);
       }
     }
 
-    if (acao.includes("Retorno")) {
-      // ✅ permite retorno de "Em Uso" e de "Fixo"
-      if (!(status.includes("em uso") || status.includes("fixo"))) {
-        erros.push(`${serial} não está em uso/fixo (status atual: ${maquinasPorSerial[serial] || "-"})`);
+    if (acao === "RETORNO") {
+      // retorno permite em uso / fixo / manutenção
+      const ok = status.includes("em uso") || status.includes("fixo") || status.includes("manuten");
+      if (!ok) {
+        erros.push(`${serial} não está em uso/fixo/manutenção (status atual: ${maquinasPorSerial[serial] || "-"})`);
       }
     }
   });
@@ -414,7 +328,6 @@ async function enviarPayload(payload) {
     body: JSON.stringify(payload)
   });
 
-  // se backend devolver html por algum motivo, isso pode quebrar
   const contentType = resp.headers.get("content-type") || "";
   if (!contentType.includes("application/json")) {
     const txt = await resp.text();
@@ -428,24 +341,17 @@ form.addEventListener("submit", async (e) => {
   e.preventDefault();
 
   const acao = acaoSelect.value;
-
-  const id_evento = (document.getElementById("idEvento").value || "").trim();
-  const dt_saida = document.getElementById("dtSaida").value || "";
-  const dt_retorno = document.getElementById("dtRetorno").value || "";
-  const obs = document.getElementById("obs").value || "";
+  const local = (localSelect.value || "").trim();
+  const evento = (document.getElementById("evento").value || "").trim();
+  const observacoes = (document.getElementById("observacoes").value || "").trim();
 
   if (!acao) return alert("Selecione uma ação.");
+  if (!local) return alert("Selecione o local.");
   if (selecionadas.length === 0) return alert("Selecione ao menos 1 máquina.");
 
-  const isEnvio = acao.includes("Envio");
-  const isRetorno = acao.includes("Retorno");
-  const isEnvioFixo = acao === "Envio Fixo";
-
-  // validações do fluxo (igual backend)
-  if (isEnvio) {
-    if (!id_evento) return alert("Informe o ID do Evento.");
-    if (!dt_saida) return alert("Informe a Data de Envio.");
-    if (!isEnvioFixo && !dt_retorno) return alert("Informe a Data de Retorno.");
+  const isEnvio = (acao === "ENVIO" || acao === "ENVIO_FIXO");
+  if (isEnvio && !evento) {
+    return alert("Informe o evento (pode ser nome ou ID).");
   }
 
   // valida status
@@ -457,33 +363,16 @@ form.addEventListener("submit", async (e) => {
   btnRegistrar.textContent = "Registrando...";
 
   try {
-    // payload alinhado ao backend
     const payload = {
       acao,
       seriais: selecionadas,
-      id_evento: isEnvio ? id_evento : "",
-      dt_saida: isEnvio ? dt_saida : "",
-      dt_retorno: (isEnvio && !isEnvioFixo) ? dt_retorno : "",
-      obs
+      local,
+      // no retorno/manutenção, evento pode ser vazio
+      evento: isEnvio ? evento : (evento || "-"),
+      observacoes: observacoes || "-"
     };
 
-    let data = await enviarPayload(payload);
-
-    // se retorno precisar origem manual (popup)
-    if (data && data.needsPopup) {
-      const origem = prompt(
-        "Alguns seriais não possuem histórico/origem.\n\n" +
-        "Digite uma observação de origem (ex: 'Retorno sem histórico - veio do estoque X'):"
-      );
-
-      if (!origem) {
-        alert("Operação cancelada. Sem origem não é possível registrar esses retornos.");
-        return;
-      }
-
-      // reenviar com obs_origem (backend já espera isso)
-      data = await enviarPayload({ ...payload, obs_origem: origem });
-    }
+    const data = await enviarPayload(payload);
 
     if (data && data.ok) {
       alert("Movimentação registrada!");

@@ -1,4 +1,3 @@
-// src/routes/index.js
 import express from "express";
 import { getMaquinas, getResumo } from "../db.js";
 
@@ -35,9 +34,8 @@ router.get("/", async (req, res) => {
       porLocal,
       enviosSeries,
       topEventos,
-      alerts
+      alerts,
     });
-
   } catch (error) {
     console.error("❌ Erro ao carregar dashboard:", error);
 
@@ -52,14 +50,14 @@ router.get("/", async (req, res) => {
         fixas: 0,
         disponiveisSP: 0,
         disponiveisRJ: 0,
-        disponiveisURA: 0
+        disponiveisURA: 0,
       },
       porStatus: null,
       porEmpresa: null,
       porLocal: null,
       enviosSeries: null,
       topEventos: [],
-      alerts: []
+      alerts: [],
     });
   }
 });

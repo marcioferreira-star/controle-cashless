@@ -6,7 +6,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import session from "express-session";
 
-// Rotas
+// Rotas (IMPORT RELATIVO)
 import loginRoutes from "./routes/login.js";
 import indexRoutes from "./routes/index.js";
 import maquinasRoutes from "./routes/maquinas.js";
@@ -29,7 +29,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
 /* ============================================================
-   SESSÃO (SEGURA PARA PRODUÇÃO)
+   SESSÃO
 ============================================================ */
 app.use(
   session({
@@ -73,7 +73,7 @@ app.use("/historico", requireLogin, historicoRoutes);
 app.use("/api", requireLogin, apiRoutes);
 
 /* ============================================================
-   INICIAR SERVIDOR (LOCAL + PRODUÇÃO)
+   INICIAR SERVIDOR
 ============================================================ */
 const PORT = process.env.PORT || 3000;
 

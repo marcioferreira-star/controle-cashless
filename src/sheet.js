@@ -3,43 +3,63 @@ import { google } from "googleapis";
 /* =====================================================
    ID DA PLANILHA
 ===================================================== */
-const SPREADSHEET_ID = process.env.SPREADSHEET_ID || "18tagiBqebJEUEv61dxsnAcKcfk3tQ--jzJLpyAGt92E";
+const SPREADSHEET_ID =
+  process.env.SPREADSHEET_ID || "18tagiBqebJEUEv61dxsnAcKcfk3tQ--jzJLpyAGt92E";
 
 /* =====================================================
-   AUTH (PRODUÇÃO): via variável GOOGLE_SERVICE_ACCOUNT_JSON
-   - No Railway/Render/etc você vai criar essa variável
-   - Localmente, você pode setar ela usando seu credentials.json
+   AUTH
+   Suporta 2 modos:
+   1) LOCAL (novo): GOOGLE_CLIENT_EMAIL + GOOGLE_PRIVATE_KEY
+   2) PRODUÇÃO/LEGADO: GOOGLE_SERVICE_ACCOUNT_JSON (JSON inteiro)
 ===================================================== */
-function getServiceAccountFromEnv() {
-  const raw = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
 
-  if (!raw) {
+function getCredentials() {
+  // ✅ Modo legado / produção (JSON inteiro)
+  if (process.env.GOOGLE_SERVICE_ACCOUNT_JSON) {
+    const obj = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_JSON);
+
+    if (obj.private_key && typeof obj.private_key === "string") {
+      obj.private_key = obj.private_key.replace(/\\n/g, "\n");
+    }
+
+    return obj;
+  }
+
+  // ✅ Modo novo (variáveis separadas no .env)
+  const client_email = process.env.GOOGLE_CLIENT_EMAIL;
+  let private_key = process.env.GOOGLE_PRIVATE_KEY;
+  const project_id = process.env.GOOGLE_PROJECT_ID;
+
+  if (!client_email || !private_key) {
     throw new Error(
-      "Faltando GOOGLE_SERVICE_ACCOUNT_JSON no ambiente. " +
-      "Em produção, crie a variável com o conteúdo do credentials.json. " +
-      "Local: export/defina GOOGLE_SERVICE_ACCOUNT_JSON antes do npm start."
+      "Credenciais Google faltando. Configure:\n" +
+        "- GOOGLE_CLIENT_EMAIL\n" +
+        "- GOOGLE_PRIVATE_KEY\n" +
+        "(opcional) GOOGLE_PROJECT_ID\n" +
+        "Ou use GOOGLE_SERVICE_ACCOUNT_JSON."
     );
   }
 
-  // Algumas plataformas pedem o JSON em 1 linha; outras aceitam multiline.
-  // Aqui garantimos que o private_key com '\n' funcione.
-  const obj = JSON.parse(raw);
+  // garante \n correto mesmo se vier escapado
+  private_key = private_key.replace(/\\n/g, "\n");
 
-  if (obj.private_key && typeof obj.private_key === "string") {
-    obj.private_key = obj.private_key.replace(/\\n/g, "\n");
-  }
-
-  return obj;
+  return {
+    type: "service_account",
+    project_id,
+    client_email,
+    private_key,
+  };
 }
 
-const serviceAccount = getServiceAccountFromEnv();
+const credentials = getCredentials();
 
 const auth = new google.auth.GoogleAuth({
-  credentials: serviceAccount,
+  credentials,
   scopes: [
     "https://www.googleapis.com/auth/spreadsheets",
-    "https://www.googleapis.com/auth/drive"
-  ]
+    // drive é opcional. Se não precisar (criar/renomear/compartilhar arquivos), pode remover.
+    "https://www.googleapis.com/auth/drive",
+  ],
 });
 
 const sheets = google.sheets({ version: "v4", auth });
@@ -53,10 +73,12 @@ async function getSheetId(sheetName) {
   if (_sheetIdCache.has(sheetName)) return _sheetIdCache.get(sheetName);
 
   const meta = await sheets.spreadsheets.get({
-    spreadsheetId: SPREADSHEET_ID
+    spreadsheetId: SPREADSHEET_ID,
   });
 
-  const sheet = meta.data.sheets?.find(s => s.properties?.title === sheetName);
+  const sheet = meta.data.sheets?.find(
+    (s) => s.properties?.title === sheetName
+  );
 
   const id = sheet?.properties?.sheetId;
   if (!id) return null;
@@ -72,11 +94,11 @@ export async function getSheetData(range) {
   try {
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
-      range
+      range,
     });
     return res.data.values || [];
   } catch (error) {
-    console.error("❌ Erro ao ler planilha:", error);
+    console.error("❌ Erro ao ler planilha:", error?.message || error);
     return [];
   }
 }
@@ -90,11 +112,11 @@ export async function updateSheetCell(range, value) {
       spreadsheetId: SPREADSHEET_ID,
       range,
       valueInputOption: "USER_ENTERED",
-      requestBody: { values: [[value]] }
+      requestBody: { values: [[value]] },
     });
     return true;
   } catch (error) {
-    console.error("❌ Erro ao atualizar célula:", error);
+    console.error("❌ Erro ao atualizar célula:", error?.message || error);
     return false;
   }
 }
@@ -116,30 +138,33 @@ export async function updateSheetCellPreserveFormat(sheetName, row, col, value) 
           start: {
             sheetId,
             rowIndex: row - 1,
-            columnIndex: col - 1
+            columnIndex: col - 1,
           },
           rows: [
             {
               values: [
                 {
-                  userEnteredValue: { stringValue: String(value ?? "") }
-                }
-              ]
-            }
+                  userEnteredValue: { stringValue: String(value ?? "") },
+                },
+              ],
+            },
           ],
-          fields: "userEnteredValue"
-        }
-      }
+          fields: "userEnteredValue",
+        },
+      },
     ];
 
     await sheets.spreadsheets.batchUpdate({
       spreadsheetId: SPREADSHEET_ID,
-      resource: { requests }
+      resource: { requests },
     });
 
     return true;
   } catch (error) {
-    console.error("❌ Erro ao atualizar (preservando formato):", error);
+    console.error(
+      "❌ Erro ao atualizar (preservando formato):",
+      error?.message || error
+    );
     return false;
   }
 }
@@ -154,11 +179,11 @@ export async function updateSheetAppend(range, values) {
       range,
       valueInputOption: "USER_ENTERED",
       insertDataOption: "INSERT_ROWS",
-      requestBody: { values: [values] }
+      requestBody: { values: [values] },
     });
     return true;
   } catch (error) {
-    console.error("❌ Erro ao inserir linha:", error);
+    console.error("❌ Erro ao inserir linha:", error?.message || error);
     return false;
   }
 }
@@ -175,12 +200,12 @@ export async function appendToSheet(range, values) {
       range,
       valueInputOption: "USER_ENTERED",
       insertDataOption: "INSERT_ROWS",
-      requestBody: { values: rows }
+      requestBody: { values: rows },
     });
 
     return true;
   } catch (error) {
-    console.error("❌ Erro ao append na planilha:", error);
+    console.error("❌ Erro ao append na planilha:", error?.message || error);
     return false;
   }
 }
@@ -193,22 +218,22 @@ export async function batchUpdateValues(updates) {
   if (!Array.isArray(updates) || updates.length === 0) return true;
 
   try {
-    const data = updates.map(u => ({
+    const data = updates.map((u) => ({
       range: u.range,
-      values: [[u.value]]
+      values: [[u.value]],
     }));
 
     await sheets.spreadsheets.values.batchUpdate({
       spreadsheetId: SPREADSHEET_ID,
       requestBody: {
         valueInputOption: "USER_ENTERED",
-        data
-      }
+        data,
+      },
     });
 
     return true;
   } catch (error) {
-    console.error("❌ Erro no batchUpdateValues:", error);
+    console.error("❌ Erro no batchUpdateValues:", error?.message || error);
     return false;
   }
 }

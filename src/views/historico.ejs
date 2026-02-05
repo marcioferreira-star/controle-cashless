@@ -47,13 +47,13 @@
   border-bottom: 1px solid #003a94;
   box-shadow: 0 2px 5px rgba(0,0,0,0.15);
   z-index: 5;
-  overflow-x: hidden; /* desktop ok */
+  overflow-x: hidden;
 }
 
 .table-history {
   width: 100%;
   border-collapse: collapse;
-  table-layout: fixed; /* desktop ok */
+  table-layout: fixed;
 }
 
 .table-history thead th {
@@ -75,7 +75,7 @@
 .table-body {
   max-height: 490px;
   overflow-y: auto;
-  overflow-x: hidden; /* no mobile a gente libera */
+  overflow-x: hidden;
 }
 
 .table-body::-webkit-scrollbar {
@@ -85,22 +85,13 @@
   background: #b7b7b7;
   border-radius: 20px;
 }
-.table-body::-webkit-scrollbar-thumb:hover {
-  background: #929292;
-}
 
 /* ------------------------- */
-/* LINHAS DA TABELA */
+/* LINHAS */
 /* ------------------------- */
-.table-history tbody tr {
-  background: #fff;
-  transition: 0.15s;
-}
-
 .table-history tbody tr:nth-child(odd) {
   background: #f7f9fc;
 }
-
 .table-history tbody tr:hover {
   background: #eaf1ff;
 }
@@ -109,7 +100,6 @@
   padding: 12px;
   font-size: 14px;
   border-bottom: 1px solid #f0f0f0;
-  word-wrap: break-word;
 }
 
 /* ------------------------- */
@@ -122,140 +112,94 @@
   font-size: 15px;
 }
 
-/* ✅ MOBILE: filtros quebram e tabela vira scroll horizontal (sem texto “em pé”) */
+/* MOBILE */
 @media (max-width: 900px){
-  .filter-box{
-    flex-wrap: wrap;
-  }
+  .filter-box{ flex-wrap: wrap; }
   .filter-box input,
-  .filter-box select{
-    flex: 1 1 48%;
-    min-width: 160px;
-  }
+  .filter-box select{ flex: 1 1 48%; min-width: 160px; }
 
-  .box-wrapper{
-    overflow: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .table-head{
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-
+  .box-wrapper,
+  .table-head,
   .table-body{
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
   }
 
   .table-history{
-    min-width: 1100px;
+    min-width: 1000px;
     table-layout: auto !important;
   }
 
   .table-history th,
   .table-history td{
     white-space: nowrap;
-    word-wrap: normal;
   }
 }
 </style>
 
 <div class="main-content">
-
-  <h1 style="margin-bottom: 22px; font-weight:700;">Histórico de Movimentações</h1>
+  <h1 style="margin-bottom:22px;font-weight:700;">Histórico de Movimentações</h1>
 
   <!-- FILTROS -->
   <div class="filter-box">
     <input type="text" id="filtroSerial" placeholder="Filtrar Serial">
-    <input type="text" id="filtroEvento" placeholder="Filtrar ID Evento">
+    <input type="text" id="filtroEvento" placeholder="Filtrar Evento">
     <select id="filtroAcao">
       <option value="">Filtrar Ação</option>
       <option value="envio">Envio</option>
       <option value="retorno">Retorno</option>
       <option value="fixo">Fixo</option>
+      <option value="manutencao">Manutenção</option>
     </select>
   </div>
 
-  <!-- CAIXA DA TABELA -->
+  <!-- TABELA -->
   <div class="box-wrapper">
-
-    <!-- CABEÇALHO FIXO -->
+    <!-- CABEÇALHO -->
     <div class="table-head">
       <table class="table-history">
-        <colgroup>
-          <col style="width:10%">
-          <col style="width:7%">
-          <col style="width:8%">
-          <col style="width:9%">
-          <col style="width:9%">
-          <col style="width:8%">
-          <col style="width:8%">
-          <col style="width:12%">
-          <col style="width:12%">
-          <col style="width:10%">
-          <col style="width:7%">
-        </colgroup>
         <thead>
           <tr>
-            <th>Nº Serial</th>
-            <th>ID Evento</th>
+            <th>Data</th>
+            <th>Serial</th>
             <th>Ação</th>
-            <th>Data de Envio</th>
-            <th>Data de Retorno</th>
-            <th>Status</th>
+            <th>Evento</th>
+            <th>Local</th>
+            <th>Status Anterior</th>
+            <th>Status Novo</th>
             <th>Usuário</th>
-            <th>Nome Evento</th>
-            <th>Produtora</th>
-            <th>Comercial</th>
-            <th>Observação</th>
+            <th>Observações</th>
           </tr>
         </thead>
       </table>
     </div>
 
-    <!-- CORPO COM SCROLL -->
+    <!-- CORPO -->
     <div class="table-body">
       <table class="table-history">
-        <colgroup>
-          <col style="width:10%">
-          <col style="width:7%">
-          <col style="width:8%">
-          <col style="width:9%">
-          <col style="width:9%">
-          <col style="width:8%">
-          <col style="width:8%">
-          <col style="width:12%">
-          <col style="width:12%">
-          <col style="width:10%">
-          <col style="width:7%">
-        </colgroup>
         <tbody id="bodyHistorico">
-
           <% if (!historico || historico.length === 0) { %>
-            <tr><td colspan="11" class="empty-msg">Nenhum registro encontrado</td></tr>
+            <tr>
+              <td colspan="9" class="empty-msg">Nenhum registro encontrado</td>
+            </tr>
           <% } else { %>
             <% [...historico].reverse().forEach(h => { %>
               <tr>
+                <td><%= h.data || "-" %></td>
                 <td><%= h.serial || "-" %></td>
-                <td><%= h.evento || "-" %></td>
                 <td><%= h.acao || "-" %></td>
-                <td><%= h.saida || "-" %></td>
-                <td><%= h.retorno || "-" %></td>
-                <td><%= h.status || "-" %></td>
+                <td><%= h.evento || "-" %></td>
+                <td><%= h.local || "-" %></td>
+                <td><%= h.statusAnterior || "-" %></td>
+                <td><%= h.statusNovo || "-" %></td>
                 <td><%= h.usuario || "-" %></td>
-                <td><%= h.nome_evento || "-" %></td>
-                <td><%= h.produtora || "-" %></td>
-                <td><%= h.comercial || "-" %></td>
-                <td><%= h.obs || "-" %></td>
+                <td><%= h.observacoes || "-" %></td>
               </tr>
             <% }) %>
           <% } %>
-
         </tbody>
       </table>
     </div>
-
   </div>
 </div>
 
@@ -265,18 +209,14 @@
 const filtroSerial = document.getElementById("filtroSerial");
 const filtroEvento = document.getElementById("filtroEvento");
 const filtroAcao   = document.getElementById("filtroAcao");
-
 const tabela = document.getElementById("bodyHistorico");
 
-/* =====================================================
-   SUPORTE A MÚLTIPLOS SERIAIS E EVENTOS
-===================================================== */
 function parseLista(value) {
   return value
     .toLowerCase()
     .replace(/\s+/g, "")
     .split(/[,;\n]+/g)
-    .filter(x => x !== "");
+    .filter(x => x);
 }
 
 function aplicarFiltros() {
@@ -287,14 +227,14 @@ function aplicarFiltros() {
   for (const row of tabela.rows) {
     let show = true;
 
-    const colSerial = row.cells[0].innerText.toLowerCase().replace(/\s+/g, "");
-    const colEvento = row.cells[1].innerText.toLowerCase().replace(/\s+/g, "");
+    const colSerial = row.cells[1].innerText.toLowerCase();
+    const colEvento = row.cells[3].innerText.toLowerCase();
     const colAcao   = row.cells[2].innerText.toLowerCase();
 
-    if (listaSeriais.length > 0 && !listaSeriais.some(v => colSerial.includes(v)))
+    if (listaSeriais.length && !listaSeriais.some(v => colSerial.includes(v)))
       show = false;
 
-    if (listaEventos.length > 0 && !listaEventos.some(v => colEvento.includes(v)))
+    if (listaEventos.length && !listaEventos.some(v => colEvento.includes(v)))
       show = false;
 
     if (acaoFiltro && !colAcao.includes(acaoFiltro))
@@ -308,8 +248,8 @@ filtroSerial.addEventListener("input", aplicarFiltros);
 filtroEvento.addEventListener("input", aplicarFiltros);
 filtroAcao.addEventListener("change", aplicarFiltros);
 
-/* ✅ sincroniza scroll do cabeçalho com o corpo (ajuda MUITO no mobile) */
-(function syncScroll(){
+/* sync scroll */
+(function(){
   const tb = document.querySelector(".table-body");
   const th = document.querySelector(".table-head");
   if (!tb || !th) return;
