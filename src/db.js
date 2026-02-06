@@ -51,7 +51,7 @@ function isFresh(ts) {
 
 /* =========================================================
    LER MAQUINAS (A:J)
-   A Serial | B Modelo | C Operadora | D Status | E Local
+   A Serial | B Modelo | C Patrimônio | D Status | E Local
    F Evento | G Tipo | H Observações | I Criado em | J Atualizado em
 ========================================================= */
 export async function getMaquinas(options = {}) {
@@ -67,7 +67,7 @@ export async function getMaquinas(options = {}) {
     linha: i + 2,
     serial: r[0] || "-",
     modelo: r[1] || "-",
-    operadora: r[2] || "-",
+    patrimonio: r[2] || "-",
     status: r[3] || "-",
     local: r[4] || "-",
     evento: r[5] || "-",
