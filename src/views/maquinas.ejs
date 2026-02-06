@@ -113,6 +113,7 @@
   <!-- ===================== FILTROS ===================== -->
   <div class="filters-box">
     <input type="text" id="filtroSerial" placeholder="Serials (ex: PBA123,11703)">
+    <input type="text" id="filtroPatrimonio" placeholder="Patrimônio (ex: PAT-00123)">
 
     <select id="filtroStatus" data-label="Status">
       <option value="">Status</option>
@@ -154,6 +155,7 @@
           <tr
             class="linha"
             data-serial="<%= (m.serial || '').toLowerCase() %>"
+            data-patrimonio="<%= (m.patrimonio || '').toLowerCase() %>"
             data-status="<%= (m.status || '-').trim() %>"
             data-local="<%= (m.local || '-').trim() %>"
             data-evento="<%= (m.evento || '-').trim() %>"
@@ -234,6 +236,7 @@
 ============================================================ */
 const linhas = [...document.querySelectorAll(".linha")];
 const filtroSerial  = document.getElementById("filtroSerial");
+const filtroPatrimonio = document.getElementById("filtroPatrimonio");
 const filtroStatus  = document.getElementById("filtroStatus");
 const filtroLocal   = document.getElementById("filtroLocal");
 const filtroEvento  = document.getElementById("filtroEvento");
@@ -253,7 +256,8 @@ function atualizarContador() {
    FILTROS
 ============================================================ */
 function aplicarFiltros() {
-  const txt = (filtroSerial.value || "").toLowerCase();
+  const txtSerial = (filtroSerial.value || "").toLowerCase();
+  const txtPat    = (filtroPatrimonio.value || "").toLowerCase();
   const st  = filtroStatus.value;
   const loc = filtroLocal.value;
   const ev  = filtroEvento.value;
@@ -262,14 +266,21 @@ function aplicarFiltros() {
     let mostrar = true;
 
     const serial = row.dataset.serial || "";
+    const patrimonio = row.dataset.patrimonio || "";
     const status = row.dataset.status || "";
     const local  = row.dataset.local || "";
     const evento = row.dataset.evento || "";
 
     // multi-serial por vírgula
-    if (txt) {
-      const termos = txt.split(",").map(t => t.trim()).filter(t => t);
+    if (txtSerial) {
+      const termos = txtSerial.split(",").map(t => t.trim()).filter(t => t);
       if (!termos.some(t => serial.includes(t))) mostrar = false;
+    }
+
+    // multi-patrimonio por vírgula
+    if (txtPat) {
+      const termos = txtPat.split(",").map(t => t.trim()).filter(t => t);
+      if (!termos.some(t => patrimonio.includes(t))) mostrar = false;
     }
 
     if (st && status !== st) mostrar = false;
@@ -315,7 +326,7 @@ function atualizarFiltrosInteligentes() {
 /* ============================================================
    EVENTOS DE FILTRO
 ============================================================ */
-[filtroSerial, filtroStatus, filtroLocal, filtroEvento]
+[filtroSerial, filtroPatrimonio, filtroStatus, filtroLocal, filtroEvento]
   .forEach(f => {
     f.addEventListener("input", aplicarFiltros);
     f.addEventListener("change", aplicarFiltros);
@@ -323,6 +334,7 @@ function atualizarFiltrosInteligentes() {
 
 btnLimpar.addEventListener("click", () => {
   filtroSerial.value = "";
+  filtroPatrimonio.value = "";
   filtroStatus.value = "";
   filtroLocal.value = "";
   filtroEvento.value = "";
