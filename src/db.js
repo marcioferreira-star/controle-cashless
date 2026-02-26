@@ -50,9 +50,9 @@ function isFresh(ts) {
 }
 
 /* =========================================================
-   LER MAQUINAS (A:J)
-   A Serial | B Modelo | C Patrimônio | D Status | E Local
-   F Evento | G Tipo | H Observações | I Criado em | J Atualizado em
+   LER MAQUINAS (A:K)
+   A Serial | B Codigo ID | C Modelo | D Patrimônio | E Status
+   F Local | G Evento | H Tipo | I Observações | J Criado em | K Atualizado em
 ========================================================= */
 export async function getMaquinas(options = {}) {
   const force = typeof options === "boolean" ? options : !!options.force;
@@ -61,20 +61,21 @@ export async function getMaquinas(options = {}) {
     return CACHE.maquinas.data;
   }
 
-  const rows = await getSheetData(`'${MAQUINAS_SHEET}'!A2:J`);
+  const rows = await getSheetData(`'${MAQUINAS_SHEET}'!A2:K`);
 
   const maquinas = (rows || []).map((r, i) => ({
-    linha: i + 2,
-    serial: r[0] || "-",
-    modelo: r[1] || "-",
-    patrimonio: r[2] || "-",
-    status: r[3] || "-",
-    local: r[4] || "-",
-    evento: r[5] || "-",
-    tipo: r[6] || "-",
-    observacoes: r[7] || "-",
-    criadoEm: normalizarDataBR(r[8] || "-"),
-    atualizadoEm: normalizarDataBR(r[9] || "-")
+  linha: i + 2,
+  serial: r[0] || "-",
+  codigoId: r[1] || "-", 
+  modelo: r[2] || "-",
+  patrimonio: r[3] || "-",
+  status: r[4] || "-",
+  local: r[5] || "-",
+  evento: r[6] || "-",
+  tipo: r[7] || "-",
+  observacoes: r[8] || "-",
+  criadoEm: normalizarDataBR(r[9] || "-"),
+  atualizadoEm: normalizarDataBR(r[10] || "-")
   }));
 
   CACHE.maquinas = { ts: now(), data: maquinas };
@@ -123,23 +124,23 @@ export async function atualizarMaquina(serial, patch = {}) {
 
   const batch = [];
 
-  if (patch.status !== undefined)
-    batch.push({ range: `'${MAQUINAS_SHEET}'!D${m.linha}`, value: patch.status || "-" });
+if (patch.status !== undefined)
+  batch.push({ range: `'${MAQUINAS_SHEET}'!E${m.linha}`, value: patch.status || "-" });
 
-  if (patch.local !== undefined)
-    batch.push({ range: `'${MAQUINAS_SHEET}'!E${m.linha}`, value: patch.local || "-" });
+if (patch.local !== undefined)
+  batch.push({ range: `'${MAQUINAS_SHEET}'!F${m.linha}`, value: patch.local || "-" });
 
-  if (patch.evento !== undefined)
-    batch.push({ range: `'${MAQUINAS_SHEET}'!F${m.linha}`, value: patch.evento || "-" });
+if (patch.evento !== undefined)
+  batch.push({ range: `'${MAQUINAS_SHEET}'!G${m.linha}`, value: patch.evento || "-" });
 
-  if (patch.tipo !== undefined)
-    batch.push({ range: `'${MAQUINAS_SHEET}'!G${m.linha}`, value: patch.tipo || "-" });
+if (patch.tipo !== undefined)
+  batch.push({ range: `'${MAQUINAS_SHEET}'!H${m.linha}`, value: patch.tipo || "-" });
 
-  if (patch.observacoes !== undefined)
-    batch.push({ range: `'${MAQUINAS_SHEET}'!H${m.linha}`, value: patch.observacoes || "-" });
+if (patch.observacoes !== undefined)
+  batch.push({ range: `'${MAQUINAS_SHEET}'!I${m.linha}`, value: patch.observacoes || "-" });
 
-  // ✅ sempre atualiza a data em BR
-  batch.push({ range: `'${MAQUINAS_SHEET}'!J${m.linha}`, value: hojeBR() });
+// ✅ sempre atualiza a data em BR
+batch.push({ range: `'${MAQUINAS_SHEET}'!K${m.linha}`, value: hojeBR() });
 
   const ok = await batchUpdateValues(batch);
   if (!ok) return { ok: false, msg: "Falha ao atualizar a planilha." };

@@ -139,6 +139,7 @@
           <th>#</th>
           <th>Modelo</th>
           <th>Serial</th>
+          <th>Código ID</th>
           <th>Patrimonio</th>
           <th>Status</th>
           <th>Local</th>
@@ -155,6 +156,7 @@
           <tr
             class="linha"
             data-serial="<%= (m.serial || '').toLowerCase() %>"
+            data-codigoid="<%= (m.codigoId || '').toLowerCase() %>"
             data-patrimonio="<%= (m.patrimonio || '').toLowerCase() %>"
             data-status="<%= (m.status || '-').trim() %>"
             data-local="<%= (m.local || '-').trim() %>"
@@ -163,6 +165,7 @@
             <td><%= i + 1 %></td>
             <td><%= m.modelo || '-' %></td>
             <td><%= m.serial || '-' %></td>
+            <td><%= m.codigoId || '-' %></td>
             <td><%= m.patrimonio || '-' %></td>
 
             <td>
@@ -353,13 +356,14 @@ btnExportar.addEventListener("click", () => {
     return {
       Modelo: tds[1].innerText.trim(),
       Serial: tds[2].innerText.trim(),
-      Patrimonio: tds[3].innerText.trim(),
+      CodigoID: tds[3].innerText.trim(),
+      Patrimonio: tds[4].innerText.trim(),
       Status: row.querySelector(".select-status").value,
       Local: row.querySelector(".select-local").value,
       Evento: row.querySelector("input[id^='evento_']").value.trim(),
       Tipo: row.querySelector("input[id^='tipo_']").value.trim(),
       Observacoes: row.querySelector("input[id^='obs_']").value.trim(),
-      AtualizadoEm: tds[9].innerText.trim()
+      AtualizadoEm: tds[10].innerText.trim()
     };
   });
 
@@ -369,11 +373,13 @@ btnExportar.addEventListener("click", () => {
   XLSX.writeFile(wb, "maquinas_filtradas.xlsx");
 });
 
+
 /* ============================================================
    SALVAR
    - usa /api/atualizar-status
    - registra histórico automaticamente
 ============================================================ */
+/*
 document.querySelectorAll(".btn-salvar").forEach(btn => {
   btn.addEventListener("click", async () => {
     const serial = btn.dataset.serial;
@@ -411,6 +417,7 @@ document.querySelectorAll(".btn-salvar").forEach(btn => {
     }
   });
 });
+*/
 
 /* INIT */
 atualizarFiltrosInteligentes();

@@ -68,7 +68,7 @@ function localFromAcao(acao) {
 ====================================================== */
 router.get("/test-nova-planilha", async (req, res) => {
   try {
-    const maquinas = await getSheetData("MAQUINAS!A1:J");
+    const maquinas = await getSheetData("MAQUINAS!A1:K");
 
     const okWrite = await appendToSheet("HISTORICO!A:I", [
       hojeBR(),
@@ -210,7 +210,7 @@ router.post("/registrar-envio", async (req, res) => {
 ====================================================== */
 router.post("/atualizar-status", async (req, res) => {
   try {
-    const { serial, status, evento, local, observacoes } = req.body;
+    const { serial, status, evento, local, tipo, observacoes } = req.body;
 
     if (!serial?.trim()) return res.json({ ok: false, msg: "Serial obrigatório." });
     if (!status?.trim()) return res.json({ ok: false, msg: "Status obrigatório." });
@@ -228,6 +228,7 @@ router.post("/atualizar-status", async (req, res) => {
       status: statusNovo,
       ...(evento !== undefined ? { evento: evento || "-" } : {}),
       ...(local !== undefined ? { local: local || "-" } : {}),
+      ...(tipo !== undefined ? { tipo: tipo || "-" } : {}),
       ...(observacoes !== undefined ? { observacoes: observacoes || "-" } : {})
     };
 
