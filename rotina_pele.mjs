@@ -16,7 +16,7 @@ const P = {
 const missing = new Set();
 const img = k => {
   const [f, label] = P[k];
-  const hit = ["png","jpg","jpeg","webp"].map(e => `assets/${f}.${e}`).find(p => fs.existsSync(path.join(ROOT, p)));
+  const hit = ["png","jpg","jpeg","webp","svg"].map(e => `assets/${f}.${e}`).find(p => fs.existsSync(path.join(ROOT, p)));
   if (hit) return `<div class="ph"><img src="file://${ROOT}/${hit}"></div>`;
   missing.add(label);
   return `<div class="ph ph-empty"><span>${label}</span></div>`;
